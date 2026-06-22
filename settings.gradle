@@ -1,0 +1,32 @@
+pluginManagement {
+	repositories {
+		maven {
+			name = "Fabric"
+			url = "https://maven.fabricmc.net/"
+		}
+		gradlePluginPortal()
+		mavenCentral()
+	}
+}
+
+dependencyResolutionManagement {
+	// Fabric Loom 会自动添加 LoomLocalRemappedMods 仓库，
+	// 所以这里不能用 FAIL_ON_PROJECT_REPOS。
+	repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
+
+	repositories {
+		mavenCentral()
+
+		maven {
+			name = "Fabric"
+			url = "https://maven.fabricmc.net/"
+		}
+
+		maven {
+			name = "Modrinth"
+			url = "https://api.modrinth.com/maven"
+		}
+	}
+}
+
+rootProject.name = "pearl-relay"

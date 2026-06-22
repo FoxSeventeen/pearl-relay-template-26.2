@@ -1,0 +1,53 @@
+plugins {
+    id "net.fabricmc.fabric-loom" version "${loom_version}"
+    id "maven-publish"
+}
+
+repositories {
+    mavenCentral()
+
+    maven {
+        name = "Fabric"
+        url = "https://maven.fabricmc.net/"
+    }
+
+    maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+    }
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+    // Carpet 依赖，用来在代码里调用假人相关类
+    implementation "maven.modrinth:carpet:${project.carpet_version}"
+}
+
+processResources {
+    inputs.property "version", project.version
+
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 25
+}
+
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
+}

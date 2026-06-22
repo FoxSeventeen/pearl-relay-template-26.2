@@ -1,0 +1,22 @@
+{
+	"schemaVersion": 1,
+	"id": "pearlrelay",
+	"version": "${version}",
+	"name": "Pearl Relay",
+	"description": "One-command fake player pearl stasis trigger based on Carpet fake players.",
+	"authors": [
+		"FoxSeventeen"
+	],
+	"environment": "server",
+	"entrypoints": {
+		"main": [
+			"com.foxseventeen.pearlrelay.PearlRelayMod"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": "26.2",
+		"fabric-api": "*",
+		"carpet": "*"
+	}
+}
