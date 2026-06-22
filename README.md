@@ -1,4 +1,4 @@
-# pearl-relay
+# pearl-relay-template-26.2
 
 ## Setup
 
