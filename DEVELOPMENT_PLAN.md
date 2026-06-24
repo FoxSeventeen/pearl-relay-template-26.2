@@ -18,7 +18,7 @@
 - 已注册开发期参数解析指令：
 
 ```mcfunction
-/pearlrelay fireRaw <bot> <dimension> <spawnX> <spawnY> <spawnZ> <lookX> <lookY> <lookZ>
+/pearlrelay fireRaw <bot> <dimension> <spawn> <lookAt>
 ```
 
 - `fireRaw` 现在会把 `dimension` 参数解析为真实的服务端维度。
@@ -158,7 +158,7 @@ Pearl Relay command works.
 计划指令：
 
 ```mcfunction
-/pearlrelay fireRaw <bot> <dimension> <spawnX> <spawnY> <spawnZ> <lookX> <lookY> <lookZ>
+/pearlrelay fireRaw <bot> <dimension> <spawn> <lookAt>
 ```
 
 示例：
@@ -362,7 +362,7 @@ actionPack.start(
 配套指令：
 
 ```mcfunction
-/pearlrelay save <relayName> <dimension> <spawnX> <spawnY> <spawnZ> <lookX> <lookY> <lookZ>
+/pearlrelay save <relayName> <dimension> <spawn> <lookAt>
 /pearlrelay list
 /pearlrelay remove <relayName>
 ```
@@ -373,6 +373,8 @@ actionPack.start(
 - 保存位置建议放在服务端配置目录。
 - 格式保持简单，方便手动编辑。
 - 当前实现会按玩家 UUID 分文件保存到 `config/pearlrelay/players/<player-uuid>.json`。
+- `<dimension>` 支持 Tab 补全当前服务器维度。
+- `<spawn>` 和 `<lookAt>` 使用 Minecraft 原生三维坐标参数，支持数字坐标、`~ ~ ~` 相对坐标，以及客户端坐标补全。
 
 示例 JSON：
 

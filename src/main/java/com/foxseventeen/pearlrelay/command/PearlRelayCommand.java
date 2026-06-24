@@ -7,7 +7,6 @@ import com.foxseventeen.pearlrelay.config.RelayConfigManager;
 import com.foxseventeen.pearlrelay.config.RelayConfigManager.RelayDefinition;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -15,6 +14,7 @@ import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import net.minecraft.commands.arguments.IdentifierArgument;
+import net.minecraft.commands.arguments.coordinates.Vec3Argument;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
@@ -68,23 +68,17 @@ public final class PearlRelayCommand {
 							.then(Commands.literal("fireRaw")
 									.then(Commands.argument("bot", StringArgumentType.word())
 											.then(Commands.argument("dimension", IdentifierArgument.id())
-													.then(Commands.argument("spawnX", DoubleArgumentType.doubleArg())
-															.then(Commands.argument("spawnY", DoubleArgumentType.doubleArg())
-																	.then(Commands.argument("spawnZ", DoubleArgumentType.doubleArg())
-																			.then(Commands.argument("lookX", DoubleArgumentType.doubleArg())
-																					.then(Commands.argument("lookY", DoubleArgumentType.doubleArg())
-																							.then(Commands.argument("lookZ", DoubleArgumentType.doubleArg())
-																									.executes(PearlRelayCommand::fireRaw))))))))))
+													.suggests(PearlRelayCommand::suggestDimensions)
+													.then(Commands.argument("spawn", Vec3Argument.vec3())
+															.then(Commands.argument("lookAt", Vec3Argument.vec3())
+																	.executes(PearlRelayCommand::fireRaw))))))
 							.then(Commands.literal("save")
 									.then(Commands.argument("name", StringArgumentType.word())
 											.then(Commands.argument("dimension", IdentifierArgument.id())
-													.then(Commands.argument("spawnX", DoubleArgumentType.doubleArg())
-															.then(Commands.argument("spawnY", DoubleArgumentType.doubleArg())
-																	.then(Commands.argument("spawnZ", DoubleArgumentType.doubleArg())
-																			.then(Commands.argument("lookX", DoubleArgumentType.doubleArg())
-																					.then(Commands.argument("lookY", DoubleArgumentType.doubleArg())
-																							.then(Commands.argument("lookZ", DoubleArgumentType.doubleArg())
-																									.executes(PearlRelayCommand::saveRelay))))))))))
+													.suggests(PearlRelayCommand::suggestDimensions)
+													.then(Commands.argument("spawn", Vec3Argument.vec3())
+															.then(Commands.argument("lookAt", Vec3Argument.vec3())
+																	.executes(PearlRelayCommand::saveRelay))))))
 							.then(Commands.literal("fire")
 									.then(Commands.argument("name", StringArgumentType.word())
 											.suggests(PearlRelayCommand::suggestRelayNames)
@@ -109,6 +103,13 @@ public final class PearlRelayCommand {
 		} catch (IOException exception) {
 			return builder.buildFuture();
 		}
+	}
+
+	private static CompletableFuture<Suggestions> suggestDimensions(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
+		return SharedSuggestionProvider.suggestResource(
+				context.getSource().levels().stream().map(ResourceKey::identifier),
+				builder
+		);
 	}
 
 	public static void tick(MinecraftServer server) {
@@ -186,16 +187,16 @@ public final class PearlRelayCommand {
 	private static int fireRaw(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
 		String bot = StringArgumentType.getString(context, "bot");
 		Identifier dimension = IdentifierArgument.getId(context, "dimension");
-		Vec3 spawnPos = getVec3(context, "spawn");
-		Vec3 lookAtPos = getVec3(context, "look");
+		Vec3 spawnPos = Vec3Argument.getVec3(context, "spawn");
+		Vec3 lookAtPos = Vec3Argument.getVec3(context, "lookAt");
 		return trigger(context, bot, dimension, spawnPos, lookAtPos);
 	}
 
 	private static int saveRelay(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
 		String name = StringArgumentType.getString(context, "name");
 		Identifier dimension = IdentifierArgument.getId(context, "dimension");
-		Vec3 spawnPos = getVec3(context, "spawn");
-		Vec3 lookAtPos = getVec3(context, "look");
+		Vec3 spawnPos = Vec3Argument.getVec3(context, "spawn");
+		Vec3 lookAtPos = Vec3Argument.getVec3(context, "lookAt");
 		ServerPlayer player = context.getSource().getPlayerOrException();
 		RelayDefinition relay;
 
@@ -285,14 +286,6 @@ public final class PearlRelayCommand {
 
 		context.getSource().sendSuccess(() -> Component.literal(message), false);
 		return Command.SINGLE_SUCCESS;
-	}
-
-	private static Vec3 getVec3(CommandContext<CommandSourceStack> context, String prefix) {
-		return new Vec3(
-				DoubleArgumentType.getDouble(context, prefix + "X"),
-				DoubleArgumentType.getDouble(context, prefix + "Y"),
-				DoubleArgumentType.getDouble(context, prefix + "Z")
-		);
 	}
 
 	private static void lookAt(ServerPlayer player, Vec3 lookAtPos) {
