@@ -8,6 +8,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.foxseventeen.pearlrelay.PearlRelayMod;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -23,7 +24,6 @@ import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestDedicatedServerContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerConnection;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
-import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
 
 /**
  * Client boundary tests which must remain in the gametest source set.
@@ -50,14 +50,6 @@ public final class PearlRelayClientGameTests implements FabricClientGameTest {
 	public void runTest(ClientGameTestContext context) {
 		ProductionArtifactProbe.assertMainClassLoadedFromReleaseJar();
 		configureVisualEvidence(context);
-		try (TestSingleplayerContext singleplayer = context.worldBuilder().create()) {
-			singleplayer.getClientLevel().waitForChunksDownload();
-			assertControlledWorldOpened(context);
-			verifyRealInputCreatesOwnedPearl(context, singleplayer.getServer());
-			verifyVanillaStasisAndRelease(context, singleplayer.getServer());
-		}
-
-		context.waitFor(client -> client.level == null && client.player == null);
 		initializeProductionHooksForInProcessDedicatedServer();
 		verifyPearlRelayTeleport(context);
 		context.waitFor(client -> client.level == null && client.player == null);
@@ -86,7 +78,10 @@ public final class PearlRelayClientGameTests implements FabricClientGameTest {
 				RelayLogProbe logs = new RelayLogProbe()
 		) {
 			connection.getClientLevel().waitForChunksDownload();
+			assertControlledWorldOpened(context);
 			assertProductionCommandRegistered(dedicated);
+			verifyRealInputCreatesOwnedPearl(context, dedicated);
+			verifyVanillaStasisAndRelease(context, dedicated);
 
 			PearlStasisFixture fixture = new PearlStasisFixture();
 			fixture.build(dedicated);
@@ -478,35 +473,77 @@ public final class PearlRelayClientGameTests implements FabricClientGameTest {
 				&& client.player.position().distanceToSqr(
 						PearlStasisFixture.FAKE_PLAYER_SPAWN
 				) < 0.0001D);
+		context.getInput().lookAt(180.0F, -80.0F);
+		context.waitTick();
+		ServerViewObservation awayView = null;
+		for (int waitedTicks = 0; waitedTicks <= 80; waitedTicks++) {
+			awayView = observeServerView(serverContext, playerId);
+			if (awayView != null
+					&& awayView.position().distanceToSqr(
+							PearlStasisFixture.FAKE_PLAYER_SPAWN
+					) < 0.0001D
+					&& !awayView.hits(PearlStasisFixture.ACTIVATION_TARGET)) {
+				break;
+			}
+			context.waitTick();
+		}
+		if (awayView == null
+				|| awayView.position().distanceToSqr(
+						PearlStasisFixture.FAKE_PLAYER_SPAWN
+				) >= 0.0001D
+				|| awayView.hits(PearlStasisFixture.ACTIVATION_TARGET)) {
+			throw new AssertionError(
+					"Client did not publish the deliberate look-away view: "
+							+ awayView
+			);
+		}
+
 		lookAtFromClient(context, PearlStasisFixture.ACTIVATION_LOOK_AT);
 
-		for (int waitedTicks = 0; waitedTicks <= 40; waitedTicks++) {
-			boolean ready = serverContext.computeOnServer(server -> {
-				ServerPlayer player = server.getPlayerList().getPlayer(playerId);
-				if (player == null
-						|| player.position().distanceToSqr(
-								PearlStasisFixture.FAKE_PLAYER_SPAWN
-						) >= 0.0001D) {
-					return false;
-				}
-				HitResult hit = player.pick(
-						Player.DEFAULT_BLOCK_INTERACTION_RANGE,
-						1.0F,
-						false
-				);
-				return hit.getType() == HitResult.Type.BLOCK
-						&& ((BlockHitResult) hit).getBlockPos().equals(
-								PearlStasisFixture.ACTIVATION_TARGET
-						);
-			});
-			if (ready) {
+		ServerViewObservation targetView = null;
+		for (int waitedTicks = 0; waitedTicks <= 120; waitedTicks++) {
+			targetView = observeServerView(serverContext, playerId);
+			if (targetView != null
+					&& targetView.position().distanceToSqr(
+							PearlStasisFixture.FAKE_PLAYER_SPAWN
+					) < 0.0001D
+					&& targetView.hits(PearlStasisFixture.ACTIVATION_TARGET)) {
 				return;
 			}
 			context.waitTick();
 		}
 		throw new AssertionError(
-				"Client did not publish the snapshot position and target view"
+				"Client did not publish the snapshot position and target view: "
+						+ targetView
 		);
+	}
+
+	private static ServerViewObservation observeServerView(
+			TestServerContext serverContext,
+			UUID playerId
+	) {
+		return serverContext.computeOnServer(server -> {
+			ServerPlayer player = server.getPlayerList().getPlayer(playerId);
+			if (player == null) {
+				return null;
+			}
+			HitResult hit = player.pick(
+					Player.DEFAULT_BLOCK_INTERACTION_RANGE,
+					1.0F,
+					false
+			);
+			BlockPos hitBlock = hit.getType() == HitResult.Type.BLOCK
+					? ((BlockHitResult) hit).getBlockPos()
+					: null;
+			return new ServerViewObservation(
+					player.position(),
+					player.getYRot(),
+					player.getXRot(),
+					hit.getType(),
+					hitBlock,
+					hit.getLocation()
+			);
+		});
 	}
 
 	private static void takeEvidenceScreenshot(
@@ -954,5 +991,18 @@ public final class PearlRelayClientGameTests implements FabricClientGameTest {
 			Vec3 ownedPosition,
 			Vec3 ownedMovement
 	) {
+	}
+
+	private record ServerViewObservation(
+			Vec3 position,
+			float yaw,
+			float pitch,
+			HitResult.Type hitType,
+			BlockPos hitBlock,
+			Vec3 hitLocation
+	) {
+		private boolean hits(BlockPos target) {
+			return hitType == HitResult.Type.BLOCK && target.equals(hitBlock);
+		}
 	}
 }
