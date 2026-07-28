@@ -3,10 +3,17 @@
 ## Status
 
 - Intent confirmed with the project owner on 2026-07-27.
-- Implementation started on branch `codex/v1.1-safe-trigger`.
-- Task 1 completed on 2026-07-27: Java 25 build, JUnit, and server GameTest pass.
+- Implementation and RC readiness completed on branch
+  `codex/v1.1-safe-trigger` on 2026-07-27.
+- Java 25 clean build, 43 JUnit tests, 15 Fabric GameTests, isolated-server
+  headless validation, restart validation, and code review pass.
+- The remotely tested implementation commit is
+  `e29156148d565ed2807923d6448bce62b8b1523a`; JAR SHA-256 is
+  `499ffe2023d692c1e4f2f0e47621879b4c63f3752d2292609cbf559d67c1d8a2`.
 - The existing production server remains stopped.
-- All automated live-server work must use `/opt/minecraft-pearlrelay-test`.
+- All automated live-server work used `/opt/minecraft-pearlrelay-test`.
+- RC tag/prerelease publication awaits owner approval; stable publication awaits
+  the documented real-player acceptance.
 
 ## Overview
 
@@ -197,16 +204,16 @@ canonical build environment if a local JDK is still unavailable.
 
 **Acceptance criteria:**
 
-- [ ] `./gradlew clean build` succeeds without a hard-coded Windows JDK path.
-- [ ] A unit test task and a Fabric server/GameTest task can execute and report
+- [x] `./gradlew clean build` succeeds without a hard-coded Windows JDK path.
+- [x] A unit test task and a Fabric server/GameTest task can execute and report
       pass/fail.
-- [ ] Build output remains ignored and no dependency or credential is committed.
+- [x] Build output remains ignored and no dependency or credential is committed.
 
 **Verification:**
 
-- [ ] Run `./gradlew clean test build`.
-- [ ] Start a minimal Fabric GameTest server on Java 25.
-- [ ] Record Minecraft, Loader, Fabric API, Carpet, Gradle, and Java versions.
+- [x] Run `./gradlew clean test build`.
+- [x] Start a minimal Fabric GameTest server on Java 25.
+- [x] Record Minecraft, Loader, Fabric API, Carpet, Gradle, and Java versions.
 
 **Dependencies:** None
 
@@ -287,11 +294,11 @@ its position and registry ID. Saving must not create a fake player.
 
 ## Checkpoint A: Foundation and configuration
 
-- [ ] Clean build and all tests pass on Java 25.
-- [ ] Old configuration is preserved and produces a migration message.
-- [ ] New saves produce a reproducible target fingerprint.
-- [ ] No command in this checkpoint creates an unintended chunk ticket.
-- [ ] Review the JSON and player-facing error contract before continuing.
+- [x] Clean build and all tests pass on Java 25.
+- [x] Old configuration is preserved and produces a migration message.
+- [x] New saves produce a reproducible target fingerprint.
+- [x] No command in this checkpoint creates an unintended chunk ticket.
+- [x] Review the JSON and player-facing error contract before continuing.
 
 ## Task 4: Implement side-effect-free named-relay preflight
 
@@ -348,7 +355,7 @@ per-player pearl ownership validation.
 - [ ] Tests assert fake-player count remains unchanged for every preflight
       rejection. (Command ordering and a representative rejection are covered;
       the full command matrix remains for isolated-server validation.)
-- [ ] Regression smoke tests cover `test`, `fireRaw`, `save`, `list`, `fire`,
+- [x] Regression smoke tests cover `test`, `fireRaw`, `save`, `list`, `fire`,
       and `remove`.
 
 **Dependencies:** Task 4
@@ -379,10 +386,10 @@ server shutdown where possible.
 - [x] Deterministic tick tests cover delayed fake spawn, successful use, spawn
       timeout, target removal after preflight, internal exception, duplicate
       fire, and cleanup of an already-absent bot.
-- [ ] After each scenario, active execution count and matching fake-player count
+- [x] After each scenario, active execution count and matching fake-player count
       are zero. (All deterministic manager cases and the real success path are
-      covered; real failure paths remain in the isolated-server matrix.)
-- [ ] A server stop/restart smoke test leaves no orphan fake player.
+      covered; real failure paths passed in the isolated-server matrix.)
+- [x] A server stop/restart smoke test leaves no orphan fake player.
 
 **Dependencies:** Task 5
 
@@ -402,8 +409,8 @@ server shutdown where possible.
 - [x] Valid note-block interaction works end to end.
 - [x] Every failure-injection test proves cleanup.
 - [x] Multiple owned pearls pass without any selection logic.
-- [ ] No new chunk ticket is observed.
-- [ ] Review execution states and timeout values before logging/release work.
+- [x] No new chunk ticket is observed.
+- [x] Review execution states and timeout values before logging/release work.
 
 ## Task 7: Add structured lifecycle logging and player feedback
 
@@ -423,7 +430,7 @@ message and an asynchronous terminal completion/failure message when possible.
 
 - [x] Log-capture tests assert fields and one terminal event per execution.
 - [x] Error-message tests cover every stable failure code.
-- [ ] Manual log review confirms successful and rejected examples are searchable
+- [x] Manual log review confirms successful and rejected examples are searchable
       with `grep 'event=relay_fire'`.
 
 **Dependencies:** Task 6
@@ -445,17 +452,20 @@ Do not start or modify the production world.
 
 **Acceptance criteria:**
 
-- [ ] Candidate JAR metadata reports the expected RC version and dependencies.
-- [ ] Test server starts on `127.0.0.1:25566` with no new crash report.
-- [ ] Headless named-relay tests exercise save, list, fire, persistence, remove,
-      all preflight rejections, multiple pearls, and cleanup.
+- [x] Candidate JAR metadata reports the expected RC version and dependencies.
+- [x] Test server starts on `127.0.0.1:25566` with no new crash report.
+- [x] Headless named-relay tests exercise save, list, fire, persistence, remove,
+      all naturally constructible preflight rejections, multiple pearls, and
+      cleanup. The structurally unreachable isolated-world spawn-only unload
+      case is covered by a non-loading unit test.
 
 **Verification:**
 
-- [ ] Record local/remote SHA-256 and archive the previous test JAR.
-- [ ] Run the automated smoke script through the `pearlrelay-test` screen.
-- [ ] Restart the test server and rerun persistence and orphan checks.
-- [ ] Inspect startup and execution logs for unexpected WARN/ERROR entries.
+- [x] Record local/remote SHA-256 and archive the previous test JAR.
+- [x] Run the headless smoke command matrix through the `pearlrelay-test`
+      screen.
+- [x] Restart the test server and rerun persistence and orphan checks.
+- [x] Inspect startup and execution logs for unexpected WARN/ERROR entries.
 
 **Dependencies:** Tasks 1-7
 
@@ -475,10 +485,10 @@ the owner to join the game.
 
 **Acceptance criteria:**
 
-- [ ] The handoff lists every player behavior below with prerequisites, exact
+- [x] The handoff lists every player behavior below with prerequisites, exact
       commands, actions, expected results, and failure criteria.
-- [ ] README explains preflight behavior and stable errors.
-- [ ] CHANGELOG separates Added, Changed, Fixed, and Known Limitations.
+- [x] README explains preflight behavior and stable errors.
+- [x] CHANGELOG separates Added, Changed, Fixed, and Known Limitations.
 
 **Required player behaviors to test:**
 
@@ -505,11 +515,11 @@ the owner to join the game.
 
 **Verification:**
 
-- [ ] Review `docs/testing/v1.1.0-player-acceptance.md` line by line against the
+- [x] Review `docs/testing/v1.1.0-player-acceptance.md` line by line against the
       implemented failure codes.
-- [ ] Do not report the RC as ready for player testing unless this document and
+- [x] Do not report the RC as ready for player testing unless this document and
       the headless result report are both complete.
-- [ ] Verify all commands use the final RC syntax.
+- [x] Verify all commands use the final RC syntax.
 
 **Dependencies:** Task 8
 
@@ -524,12 +534,12 @@ the owner to join the game.
 
 ## Checkpoint C: RC readiness
 
-- [ ] Clean Java 25 build passes.
-- [ ] Unit, GameTest, and isolated-server suites pass.
-- [ ] Candidate artifact checksum and metadata are recorded.
-- [ ] No production files or ports were modified.
-- [ ] Changelog and full player acceptance handoff are complete.
-- [ ] Code review finds no high-severity issue.
+- [x] Clean Java 25 build passes.
+- [x] Unit, GameTest, and isolated-server suites pass.
+- [x] Candidate artifact checksum and metadata are recorded.
+- [x] No production files or ports were modified.
+- [x] Changelog and full player acceptance handoff are complete.
+- [x] Code review finds no high-severity issue.
 
 ## Task 10: Record and publish `v1.1.0-rc.1`
 
@@ -552,8 +562,9 @@ Do not publish a tag from uncommitted or unverified sources.
 **Version history strategy:**
 
 - [ ] Verify commit `306e9bf` is the source baseline corresponding to deployed
-      `1.0.0` before creating any retroactive `v1.0.0` tag.
-- [ ] If provenance cannot be verified, document the deployed JAR SHA-256 and do
+      `1.0.0` before creating any retroactive `v1.0.0` tag. (Source declares
+      `1.0.0`, but the deployed JAR checksum could not be tied to that commit.)
+- [x] If provenance cannot be verified, document the deployed JAR SHA-256 and do
       not create a misleading historical tag.
 - [ ] Ensure the JAR metadata, changelog, and tag all identify
       `1.1.0-rc.1`.
