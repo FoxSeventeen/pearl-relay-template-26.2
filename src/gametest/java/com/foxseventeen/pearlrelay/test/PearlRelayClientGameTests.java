@@ -10,9 +10,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import com.foxseventeen.pearlrelay.PearlRelayMod;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.throwableitemprojectile.ThrownEnderpearl;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.entity.EntityTypeTest;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
@@ -101,7 +104,11 @@ public final class PearlRelayClientGameTests implements FabricClientGameTest {
 				// external profile lookup per repetition.
 				String relayName = RELAY_NAME;
 				fixture.reset(dedicated);
-				fixture.moveOwnerToHoldingArea(dedicated, playerId);
+				preparePlayerForSnapshotSave(
+						context,
+						dedicated,
+						playerId
+				);
 
 				int saveMessageMark = commands.mark();
 				commands.send(
@@ -115,6 +122,12 @@ public final class PearlRelayClientGameTests implements FabricClientGameTest {
 						80
 				);
 				assertSavedBotName(saveMessage, expectedBotName, repetition);
+				if (repetition == 1) {
+					takeEvidenceScreenshot(
+							context,
+							"pearlrelay-relay-snapshot-saved"
+					);
+				}
 
 				preparePlayerForFixtureThrow(context, dedicated);
 				assertPearls(
@@ -295,10 +308,7 @@ public final class PearlRelayClientGameTests implements FabricClientGameTest {
 	}
 
 	private static String saveCommand(String relayName) {
-		return "pearlrelay save " + relayName
-				+ " minecraft:overworld "
-				+ coordinates(PearlStasisFixture.FAKE_PLAYER_SPAWN)
-				+ " " + coordinates(PearlStasisFixture.ACTIVATION_LOOK_AT);
+		return "pearlrelay save " + relayName;
 	}
 
 	private static String coordinates(Vec3 position) {
@@ -454,6 +464,49 @@ public final class PearlRelayClientGameTests implements FabricClientGameTest {
 				-Math.toDegrees(Math.atan2(delta.y, horizontalDistance))
 		);
 		context.getInput().lookAt(yaw, pitch);
+	}
+
+	private static void preparePlayerForSnapshotSave(
+			ClientGameTestContext context,
+			TestServerContext serverContext,
+			UUID playerId
+	) {
+		serverContext.runCommand(
+				"tp @a " + coordinates(PearlStasisFixture.FAKE_PLAYER_SPAWN)
+		);
+		context.waitFor(client -> client.player != null
+				&& client.player.position().distanceToSqr(
+						PearlStasisFixture.FAKE_PLAYER_SPAWN
+				) < 0.0001D);
+		lookAtFromClient(context, PearlStasisFixture.ACTIVATION_LOOK_AT);
+
+		for (int waitedTicks = 0; waitedTicks <= 40; waitedTicks++) {
+			boolean ready = serverContext.computeOnServer(server -> {
+				ServerPlayer player = server.getPlayerList().getPlayer(playerId);
+				if (player == null
+						|| player.position().distanceToSqr(
+								PearlStasisFixture.FAKE_PLAYER_SPAWN
+						) >= 0.0001D) {
+					return false;
+				}
+				HitResult hit = player.pick(
+						Player.DEFAULT_BLOCK_INTERACTION_RANGE,
+						1.0F,
+						false
+				);
+				return hit.getType() == HitResult.Type.BLOCK
+						&& ((BlockHitResult) hit).getBlockPos().equals(
+								PearlStasisFixture.ACTIVATION_TARGET
+						);
+			});
+			if (ready) {
+				return;
+			}
+			context.waitTick();
+		}
+		throw new AssertionError(
+				"Client did not publish the snapshot position and target view"
+		);
 	}
 
 	private static void takeEvidenceScreenshot(
