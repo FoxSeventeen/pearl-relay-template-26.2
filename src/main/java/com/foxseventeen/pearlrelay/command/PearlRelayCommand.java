@@ -6,6 +6,7 @@ import carpet.patches.EntityPlayerMPFake;
 import com.foxseventeen.pearlrelay.config.RelayConfigManager;
 import com.foxseventeen.pearlrelay.config.RelayConfigManager.RelayDefinition;
 import com.foxseventeen.pearlrelay.relay.RelayFailure;
+import com.foxseventeen.pearlrelay.relay.RelayTargetResolver;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -62,6 +63,9 @@ public final class PearlRelayCommand {
 	);
 	private static final DynamicCommandExceptionType RELAY_CONFIG_ERROR = new DynamicCommandExceptionType(
 			message -> Component.literal("Relay config error: " + message)
+	);
+	private static final DynamicCommandExceptionType RELAY_SAVE_REJECTED = new DynamicCommandExceptionType(
+			failure -> Component.literal(saveFailureMessage((RelayFailure) failure))
 	);
 
 	private PearlRelayCommand() {
@@ -205,15 +209,35 @@ public final class PearlRelayCommand {
 		Vec3 spawnPos = Vec3Argument.getVec3(context, "spawn");
 		Vec3 lookAtPos = Vec3Argument.getVec3(context, "lookAt");
 		ServerPlayer player = context.getSource().getPlayerOrException();
+		ServerLevel level = resolveDimension(context, dimension);
+		RelayTargetResolver.Result targetResult = RelayTargetResolver.resolve(level, spawnPos, lookAtPos);
+		if (!targetResult.isSuccess()) {
+			throw RELAY_SAVE_REJECTED.create(targetResult.failure());
+		}
 		RelayDefinition relay;
 
 		try {
-			relay = RelayConfigManager.put(player.getUUID(), player.getGameProfile().name(), name, dimension, spawnPos, lookAtPos);
+			relay = RelayConfigManager.put(
+					player.getUUID(),
+					player.getGameProfile().name(),
+					name,
+					dimension,
+					spawnPos,
+					lookAtPos,
+					targetResult.target()
+			);
 		} catch (IOException exception) {
 			throw RELAY_CONFIG_ERROR.create(exception.getMessage());
 		}
 
-		context.getSource().sendSuccess(() -> Component.literal("Saved relay: " + name + " (bot=" + relay.bot() + ")"), false);
+		context.getSource().sendSuccess(
+				() -> Component.literal(
+						"Saved relay: " + name + " (bot=" + relay.bot()
+								+ ", target=" + relay.target().blockId()
+								+ "@" + relay.target().x() + "," + relay.target().y() + "," + relay.target().z() + ")"
+				),
+				false
+		);
 		return Command.SINGLE_SUCCESS;
 	}
 
@@ -376,6 +400,17 @@ public final class PearlRelayCommand {
 		}
 
 		return level;
+	}
+
+	private static String saveFailureMessage(RelayFailure failure) {
+		String detail = switch (failure) {
+			case SPAWN_CHUNK_UNLOADED -> "the fake-player spawn chunk is not loaded";
+			case TARGET_CHUNK_UNLOADED -> "the target path enters an unloaded chunk";
+			case SPAWN_POSITION_BLOCKED -> "the fake-player spawn position is blocked";
+			case TARGET_UNREACHABLE -> "no reachable target block was hit";
+			default -> "target validation failed";
+		};
+		return "[" + failure.code() + "] Cannot save relay: " + detail + ".";
 	}
 
 	private record FakePlayerResult(ServerPlayer player, String status) {

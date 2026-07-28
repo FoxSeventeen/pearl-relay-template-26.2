@@ -260,18 +260,19 @@ its position and registry ID. Saving must not create a fake player.
 
 **Acceptance criteria:**
 
-- [ ] `save` rejects unloaded spawn/target chunks, air/missed targets, blocked
+- [x] `save` rejects unloaded spawn/target chunks, air/missed targets, blocked
       spawn positions, and targets outside fake-player reach.
-- [ ] A valid target stores the exact hit block position and registry ID.
-- [ ] Saving the same name safely overwrites and upgrades a legacy relay.
+- [x] A valid target stores the exact hit block position and registry ID.
+- [x] Saving the same name safely overwrites and upgrades a legacy relay.
 
 **Verification:**
 
-- [ ] GameTests cover a reachable note block, obstructed ray, excessive
+- [x] GameTests cover a reachable note block, obstructed ray, excessive
       distance, air target, and mutable block state.
 - [ ] An assertion proves rejected saves create no fake player and no chunk
-      ticket.
-- [ ] Existing `save/list/remove` behavior remains functional.
+      ticket. (Fake-player absence and early unloaded-chunk rejection are
+      covered; direct ticket-count verification remains for remote validation.)
+- [x] Existing `save/list/remove` behavior remains functional.
 
 **Dependencies:** Tasks 1-2
 
