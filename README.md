@@ -2,12 +2,12 @@
 
 Pearl Relay 是一个面向 Minecraft 26.2 的 Fabric 服务端模组。玩家可以保存一个 Carpet 假人的出生位置和看向位置，然后用 `/pearlrelay fire <名称>` 安全触发珍珠滞留装置。
 
-当前候选版本是 `1.1.0-rc.2`。它已经通过
-[自动化、隔离服务端和真实客户端端到端测试](tasks/test-results/v1.1.0-rc.2.md)。
+当前版本是 `1.1.0`。它已经通过
+[自动化、隔离服务端和真实客户端端到端测试](tasks/test-results/v1.1.0.md)。
 原 16 项机械式玩家回归已映射到自动化证据，项目所有者已批准
-[修订后的验收边界](docs/testing/v1.1.0-player-acceptance.md)。稳定版
-`1.1.0` 仍需在最终候选提交上重跑全部门槛并作最终发布决定；只有发布声明
-包含指定兼容环境或主观体验承诺时，才增加一次短小的探索性检查。
+[修订后的验收边界](docs/testing/v1.1.0-player-acceptance.md)。本次发布不声明
+指定整合包、代理、权限系统兼容性或主观体验承诺，因此不增加重复的真人
+回归；后续若增加此类声明，再执行针对性的探索检查。
 
 ## 运行依赖
 
@@ -33,7 +33,7 @@ Windows：
 .\gradlew.bat clean test build
 ```
 
-把 `build/libs/pearlrelay-1.1.0-rc.2.jar` 复制到服务端 `mods` 目录。不要部署 `-sources.jar`。
+把 `build/libs/pearlrelay-1.1.0.jar` 复制到服务端 `mods` 目录。不要部署 `-sources.jar`。
 
 ## 指令
 
