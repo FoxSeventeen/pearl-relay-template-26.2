@@ -78,6 +78,42 @@ class RelayConfigStoreTest {
 	}
 
 	@Test
+	void overwritingConfigKeepsThePreviousSuccessfulFileAsBackup() throws Exception {
+		RelayConfigStore store = new RelayConfigStore(playersDir);
+		RelayConfigManager.TargetFingerprint firstTarget =
+				new RelayConfigManager.TargetFingerprint(10, 64, 20, "minecraft:note_block");
+		RelayConfigManager.TargetFingerprint secondTarget =
+				new RelayConfigManager.TargetFingerprint(11, 64, 20, "minecraft:stone_button");
+
+		store.put(
+				PLAYER_ID,
+				"PlayerOne",
+				"home",
+				Identifier.parse("minecraft:overworld"),
+				new Vec3(10.5, 64.0, 18.5),
+				new Vec3(10.5, 64.5, 20.5),
+				firstTarget
+		);
+		String firstSuccessfulFile = Files.readString(playersDir.resolve(PLAYER_ID + ".json"));
+
+		store.put(
+				PLAYER_ID,
+				"PlayerOne",
+				"home",
+				Identifier.parse("minecraft:overworld"),
+				new Vec3(11.5, 64.0, 18.5),
+				new Vec3(11.5, 64.5, 20.5),
+				secondTarget
+		);
+
+		assertEquals(
+				JsonParser.parseString(firstSuccessfulFile),
+				JsonParser.parseString(Files.readString(playersDir.resolve(PLAYER_ID + ".json.bak")))
+		);
+		assertEquals(secondTarget, store.get(PLAYER_ID, "home").target());
+	}
+
+	@Test
 	void filtersRelayMissingRequiredActivationData() throws Exception {
 		Files.writeString(playersDir.resolve(PLAYER_ID + ".json"), """
 				{

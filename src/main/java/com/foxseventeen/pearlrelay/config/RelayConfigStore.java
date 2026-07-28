@@ -7,7 +7,7 @@ import net.minecraft.world.phys.Vec3;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -21,9 +21,15 @@ final class RelayConfigStore {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
 	private final Path playersDir;
+	private final AtomicConfigWriter writer;
 
 	RelayConfigStore(Path playersDir) {
+		this(playersDir, new AtomicConfigWriter());
+	}
+
+	RelayConfigStore(Path playersDir, AtomicConfigWriter writer) {
 		this.playersDir = playersDir;
+		this.writer = writer;
 	}
 
 	RelayConfigManager.RelayDefinition get(UUID playerId, String name) throws IOException {
@@ -88,11 +94,8 @@ final class RelayConfigStore {
 	}
 
 	private void save(UUID playerId, PlayerRelayFile file) throws IOException {
-		Files.createDirectories(playersDir);
 		file.schemaVersion = CURRENT_SCHEMA_VERSION;
-		try (Writer writer = Files.newBufferedWriter(pathFor(playerId))) {
-			GSON.toJson(file, writer);
-		}
+		writer.write(pathFor(playerId), GSON.toJson(file).getBytes(StandardCharsets.UTF_8));
 	}
 
 	private Path pathFor(UUID playerId) {
