@@ -22,7 +22,11 @@ class RelayFailureTest {
 				"TARGET_UNREACHABLE",
 				"OWNED_PEARL_NOT_FOUND",
 				"EXECUTION_ALREADY_ACTIVE",
-				"FAKE_PLAYER_NAME_IN_USE"
+				"FAKE_PLAYER_NAME_IN_USE",
+				"FAKE_PLAYER_CREATE_FAILED",
+				"FAKE_PLAYER_SPAWN_TIMEOUT",
+				"EXECUTION_INTERNAL_ERROR",
+				"EXECUTION_CLEANUP_TIMEOUT"
 		);
 
 		Set<String> actual = Arrays.stream(RelayFailure.values())
