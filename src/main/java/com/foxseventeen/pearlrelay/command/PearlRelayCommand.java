@@ -19,6 +19,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
+import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import net.minecraft.commands.arguments.IdentifierArgument;
@@ -63,6 +64,10 @@ public final class PearlRelayCommand {
 	private static final DynamicCommandExceptionType RELAY_FIRE_REJECTED = new DynamicCommandExceptionType(
 			failure -> RelayMessages.fireFailure((RelayFailure) failure)
 	);
+	private static final SimpleCommandExceptionType SNAPSHOT_PLAYER_REQUIRED =
+			new SimpleCommandExceptionType(Component.literal(
+					"[PLAYER_REQUIRED] Snapshot relay saving can only be used by a player."
+			));
 
 	private PearlRelayCommand() {
 	}
@@ -172,7 +177,10 @@ public final class PearlRelayCommand {
 			CommandContext<CommandSourceStack> context
 	) throws CommandSyntaxException {
 		String name = StringArgumentType.getString(context, "name");
-		ServerPlayer player = context.getSource().getPlayerOrException();
+		ServerPlayer player = context.getSource().getPlayer();
+		if (player == null) {
+			throw SNAPSHOT_PLAYER_REQUIRED.create();
+		}
 		HitResult hit = player.pick(Player.DEFAULT_BLOCK_INTERACTION_RANGE, 1.0F, false);
 		if (hit.getType() != HitResult.Type.BLOCK) {
 			throw RELAY_SAVE_REJECTED.create(RelayFailure.TARGET_UNREACHABLE);

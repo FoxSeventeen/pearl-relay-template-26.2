@@ -99,6 +99,93 @@ public final class PearlRelayCommandGameTests implements CustomTestMethodInvoker
 	}
 
 	@GameTest
+	public void commandSnapshotSaveRejectsConsoleWithAStablePlayerRequiredCode(
+			GameTestHelper context
+	) {
+		CommandOutcome outcome = execute(
+				context.getLevel().getServer().createCommandSourceStack(),
+				"pearlrelay save console_only"
+		);
+
+		context.assertTrue(outcome.error().contains("PLAYER_REQUIRED"), "console rejection code");
+		context.assertValueEqual(outcome.result(), 0, "console rejection result");
+		context.succeed();
+	}
+
+	@GameTest
+	public void commandSnapshotSaveMissDoesNotWriteConfig(GameTestHelper context) throws Exception {
+		prepareDevice(context);
+		CapturingPlayer owner = createPlayer(
+				context,
+				"snapshot_miss",
+				new Vec3(0.5D, 0.0D, 0.5D)
+		);
+		String relayName = uniqueRelay("miss");
+		Path config = playerConfig(owner.getUUID());
+
+		try {
+			owner.setXRot(-90.0F);
+			owner.xRotO = -90.0F;
+
+			CommandOutcome outcome = execute(owner, "pearlrelay save " + relayName);
+
+			context.assertTrue(
+					outcome.error().contains("TARGET_UNREACHABLE"),
+					"miss rejection code: " + outcome.error()
+			);
+			context.assertFalse(Files.exists(config), "miss rejection must not create config");
+			context.assertFalse(
+					Files.exists(config.resolveSibling(config.getFileName() + ".bak")),
+					"miss rejection must not create backup"
+			);
+			context.succeed();
+		} finally {
+			owner.close();
+		}
+	}
+
+	@GameTest
+	public void commandSnapshotSaveAllowsCreatorButFireRejectsUntilTheyLeave(
+			GameTestHelper context
+	) throws Exception {
+		prepareDevice(context);
+		CapturingPlayer owner = createPlayer(
+				context,
+				"snapshot_block",
+				new Vec3(0.5D, 0.0D, 0.5D)
+		);
+		String relayName = uniqueRelay("blocked");
+
+		try {
+			owner.lookAt(
+					EntityAnchorArgument.Anchor.EYES,
+					context.absoluteVec(Vec3.atCenterOf(TARGET))
+			);
+			assertCommandSucceeded(context, "pearlrelay save " + relayName, owner);
+			RelayConfigManager.RelayDefinition relay =
+					RelayConfigManager.get(owner.getUUID(), relayName);
+			ThrownEnderpearl pearl = spawnPearl(context, owner, TARGET);
+
+			CommandOutcome outcome = execute(owner, "pearlrelay fire " + relayName);
+
+			context.assertTrue(
+					outcome.error().contains("SPAWN_POSITION_BLOCKED"),
+					"occupied snapshot fire rejection"
+			);
+			context.assertTrue(pearl.isAlive(), "occupied rejection must not consume the pearl");
+			context.assertTrue(
+					context.getLevel().getServer().getPlayerList().getPlayerByName(relay.bot()) == null,
+					"occupied rejection must not create the fake player"
+			);
+			context.assertBlockProperty(TARGET, net.minecraft.world.level.block.NoteBlock.NOTE, 0);
+			context.succeed();
+		} finally {
+			Files.deleteIfExists(playerConfig(owner.getUUID()));
+			owner.close();
+		}
+	}
+
+	@GameTest
 	public void commandTestSaveListRemoveAndSuggestionsAreIsolated(GameTestHelper context) throws Exception {
 		context.setBlock(0, 1, 3, Blocks.NOTE_BLOCK);
 		CapturingPlayer first = createPlayer(context, "first", new Vec3(3.5D, 0.0D, 0.5D));
@@ -604,9 +691,12 @@ public final class PearlRelayCommandGameTests implements CustomTestMethodInvoker
 
 	private static CommandOutcome execute(CapturingPlayer player, String command) {
 		player.clearMessages();
-		CommandSourceStack source = player.createCommandSourceStack();
+		return execute(player.createCommandSourceStack(), command);
+	}
+
+	private static CommandOutcome execute(CommandSourceStack source, String command) {
 		try {
-			int result = player.server()
+			int result = source.getServer()
 					.getCommands()
 					.getDispatcher()
 					.execute(command, source);
