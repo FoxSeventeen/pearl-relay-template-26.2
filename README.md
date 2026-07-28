@@ -9,7 +9,7 @@ Pearl Relay 是一个面向 Minecraft 26.2 的 Fabric 服务端模组。玩家�
 - Minecraft `26.2`
 - Java `25`
 - Fabric Loader `0.19.3` 或更高
-- Fabric API `0.152.2+26.2`
+- Fabric API `0.152.1+26.2` 或更高（本地构建验证 `0.152.2`）
 - Carpet `26.2`
 
 本模组只需安装在服务端。
