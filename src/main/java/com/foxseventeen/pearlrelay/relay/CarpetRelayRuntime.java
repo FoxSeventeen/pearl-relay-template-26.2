@@ -3,6 +3,7 @@ package com.foxseventeen.pearlrelay.relay;
 import carpet.fakes.ServerPlayerInterface;
 import carpet.helpers.EntityPlayerActionPack;
 import carpet.patches.EntityPlayerMPFake;
+import carpet.script.utils.Tracer;
 import com.foxseventeen.pearlrelay.config.RelayConfigManager.RelayDefinition;
 import com.foxseventeen.pearlrelay.config.RelayConfigManager.TargetFingerprint;
 import com.foxseventeen.pearlrelay.relay.RelayExecutionManager.ExecutionRequest;
@@ -90,7 +91,11 @@ public final class CarpetRelayRuntime implements RelayExecutionManager.Runtime {
 		TargetFingerprint target = request.validated().relay().target();
 		int chunkX = Math.floorDiv(target.x(), 16);
 		int chunkZ = Math.floorDiv(target.z(), 16);
-		if (level.getChunkSource().getChunkNow(chunkX, chunkZ) == null) {
+		if (!RelayTargetResolver.isChunkReady(
+				level::isPositionTickingWithEntitiesLoaded,
+				chunkX,
+				chunkZ
+		)) {
 			return RelayFailure.TARGET_CHUNK_UNLOADED;
 		}
 
@@ -104,7 +109,10 @@ public final class CarpetRelayRuntime implements RelayExecutionManager.Runtime {
 		if (player.level() != level) {
 			return RelayFailure.TARGET_UNREACHABLE;
 		}
-		HitResult hit = player.pick(player.blockInteractionRange(), 1.0F, false);
+		// Carpet's USE action ray-traces entities as well as blocks. Validate with
+		// the same tracer so a player entering the line of interaction cannot turn
+		// a completed lifecycle into a silent missed block click.
+		HitResult hit = Tracer.rayTrace(player, 1.0F, player.blockInteractionRange(), false);
 		if (!(hit instanceof BlockHitResult blockHit) || !blockHit.getBlockPos().equals(targetPos)) {
 			return RelayFailure.TARGET_UNREACHABLE;
 		}

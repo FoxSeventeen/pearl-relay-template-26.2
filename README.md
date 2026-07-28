@@ -65,7 +65,7 @@ Windows：
 
 1. 配置是新版格式，并且保存的维度存在。
 2. 目标、假人出生位置和射线路径涉及的区块已经加载。
-3. 假人出生空间没有碰撞。
+3. 假人出生空间没有方块阻挡，也没有其他玩家占据。
 4. 目标仍可从保存的出生点命中。
 5. 目标方块类型与保存时相同。
 6. 目标方块所在区块内至少有一颗属于命令执行玩家的末影珍珠。
@@ -92,7 +92,7 @@ spawn -> lookAt -> use once -> cleanup
 | `DIMENSION_UNAVAILABLE` | 保存的维度不存在 |
 | `SPAWN_CHUNK_UNLOADED` | 假人出生区块未加载 |
 | `TARGET_CHUNK_UNLOADED` | 目标或射线路径区块未加载；按设计视为没有可用珍珠 |
-| `SPAWN_POSITION_BLOCKED` | 假人出生空间被阻挡 |
+| `SPAWN_POSITION_BLOCKED` | 假人出生空间被方块阻挡或被玩家占据 |
 | `TARGET_BLOCK_CHANGED` | 目标方块类型已改变 |
 | `TARGET_UNREACHABLE` | 目标太远、被遮挡或不再命中保存的方块 |
 | `OWNED_PEARL_NOT_FOUND` | 目标方块所在区块没有属于执行玩家的珍珠 |

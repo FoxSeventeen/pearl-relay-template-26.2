@@ -23,6 +23,7 @@ Minecraft 26.2 Ender Pearls keep their relevant chunk active. For this project, 
 - Treat pearl count as a boolean readiness condition; never select, move, release, or otherwise control a pearl.
 - Fingerprint block type but not mutable block-state properties.
 - Complete all preflight checks before fake-player creation.
+- Reject a player-occupied fake-player spawn before creation, and revalidate the post-spawn target with Carpet's entity-aware USE ray trace.
 - Run accepted work through a bounded lifecycle that dispatches one use action and always attempts idempotent cleanup.
 
 ## Alternatives considered

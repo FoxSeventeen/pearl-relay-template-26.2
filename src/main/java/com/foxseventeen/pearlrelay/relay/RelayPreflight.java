@@ -7,11 +7,14 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.projectile.throwableitemprojectile.ThrownEnderpearl;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.entity.EntityTypeTest;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.Objects;
 import java.util.UUID;
@@ -34,6 +37,7 @@ public final class RelayPreflight {
 		Decision decision = check(
 				RelayTargetResolver.worldView(level),
 				(candidateOwner, target) -> countOwnedPearls(level, candidateOwner, target),
+				spawn -> hasPlayerAtSpawn(level, spawn),
 				relay,
 				ownerId
 		);
@@ -47,6 +51,16 @@ public final class RelayPreflight {
 	static Decision check(
 			RelayTargetResolver.WorldView world,
 			PearlCounter pearlCounter,
+			RelayDefinition relay,
+			UUID ownerId
+	) {
+		return check(world, pearlCounter, spawn -> false, relay, ownerId);
+	}
+
+	static Decision check(
+			RelayTargetResolver.WorldView world,
+			PearlCounter pearlCounter,
+			SpawnOccupancy spawnOccupancy,
 			RelayDefinition relay,
 			UUID ownerId
 	) {
@@ -71,6 +85,9 @@ public final class RelayPreflight {
 		}
 		if (!savedTarget.equals(targetResult.target())) {
 			return Decision.failed(RelayFailure.TARGET_UNREACHABLE);
+		}
+		if (spawnOccupancy.hasPlayer(relay.spawn())) {
+			return Decision.failed(RelayFailure.SPAWN_POSITION_BLOCKED);
 		}
 
 		int ownedPearlCount = pearlCounter.count(ownerId, targetPos);
@@ -103,6 +120,23 @@ public final class RelayPreflight {
 		).size();
 	}
 
+	private static boolean hasPlayerAtSpawn(ServerLevel level, Vec3 spawn) {
+		double radius = EntityTypes.PLAYER.getDimensions().width() / 2.0D;
+		AABB bounds = new AABB(
+				spawn.x - radius,
+				spawn.y,
+				spawn.z - radius,
+				spawn.x + radius,
+				spawn.y + EntityTypes.PLAYER.getDimensions().height(),
+				spawn.z + radius
+		);
+		return !level.getEntities(
+				EntityTypeTest.forClass(ServerPlayer.class),
+				bounds,
+				player -> true
+		).isEmpty();
+	}
+
 	private static boolean isOwnedBy(ThrownEnderpearl pearl, UUID ownerId) {
 		Entity owner = pearl.getOwner();
 		return owner != null && ownerId.equals(owner.getUUID());
@@ -111,6 +145,11 @@ public final class RelayPreflight {
 	@FunctionalInterface
 	interface PearlCounter {
 		int count(UUID ownerId, BlockPos target);
+	}
+
+	@FunctionalInterface
+	interface SpawnOccupancy {
+		boolean hasPlayer(Vec3 spawn);
 	}
 
 	record Decision(int ownedPearlCount, RelayFailure failure) {

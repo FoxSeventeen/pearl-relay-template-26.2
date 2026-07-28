@@ -14,6 +14,7 @@ import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.throwableitemprojectile.ThrownEnderpearl;
 import net.minecraft.world.item.Items;
@@ -132,6 +133,28 @@ public final class PearlRelayGameTests implements CustomTestMethodInvoker {
 		RelayPreflight.Result result = preflight(context, owner, target, "minecraft:redstone_lamp");
 
 		context.assertTrue(result.isSuccess(), "Expected block-state-only change to remain valid");
+		context.succeed();
+	}
+
+	@GameTest
+	@SuppressWarnings("removal")
+	public void preflightRejectsPlayerOccupyingFakeSpawn(GameTestHelper context) {
+		BlockPos target = new BlockPos(0, 1, 3);
+		context.setBlock(target, Blocks.NOTE_BLOCK);
+		ServerPlayer owner = context.makeMockServerPlayerInLevel();
+		owner.setPos(context.absoluteVec(new Vec3(0.5D, 0.0D, 0.5D)));
+
+		RelayPreflight.Result result = preflight(context, owner, target, "minecraft:note_block");
+
+		context.assertValueEqual(
+				result.failure(),
+				RelayFailure.SPAWN_POSITION_BLOCKED,
+				"player-occupied spawn failure"
+		);
+		context.assertTrue(
+				context.getLevel().getServer().getPlayerList().getPlayerByName("pr_gametest") == null,
+				"Occupied-spawn rejection must not create a fake player"
+		);
 		context.succeed();
 	}
 

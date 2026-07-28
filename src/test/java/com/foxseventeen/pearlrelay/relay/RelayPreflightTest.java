@@ -77,6 +77,26 @@ class RelayPreflightTest {
 	}
 
 	@Test
+	void rejectsPlayerOccupyingSpawnBeforePearlCheck() {
+		FakeWorld world = FakeWorld.ready();
+		boolean[] pearlCounterCalled = {false};
+
+		RelayPreflight.Decision result = RelayPreflight.check(
+				world,
+				(owner, target) -> {
+					pearlCounterCalled[0] = true;
+					return 1;
+				},
+				spawn -> true,
+				relay(),
+				OWNER
+		);
+
+		assertEquals(RelayFailure.SPAWN_POSITION_BLOCKED, result.failure());
+		assertFalse(pearlCounterCalled[0]);
+	}
+
+	@Test
 	void rejectsRayThatNoLongerHitsSavedTarget() {
 		FakeWorld world = FakeWorld.ready();
 		world.hit = new BlockHitResult(
