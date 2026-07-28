@@ -3,11 +3,14 @@
 	"id": "pearlrelay-gametest",
 	"version": "${version}",
 	"name": "Pearl Relay Game Tests",
-	"environment": "server",
+	"environment": "*",
 	"entrypoints": {
 		"fabric-gametest": [
 			"com.foxseventeen.pearlrelay.test.PearlRelayGameTests",
 			"com.foxseventeen.pearlrelay.test.PearlRelayCommandGameTests"
+		],
+		"fabric-client-gametest": [
+			"com.foxseventeen.pearlrelay.test.PearlRelayClientGameTests"
 		]
 	},
 	"depends": {

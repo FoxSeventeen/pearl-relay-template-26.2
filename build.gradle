@@ -33,6 +33,11 @@ dependencies {
 
     // Carpet 依赖，用来在代码里调用假人相关类
     implementation "maven.modrinth:carpet:${project.carpet_version}"
+
+    // Loom production runs load the built release JAR rather than development
+    // outputs, so their runtime mods must be declared explicitly.
+    productionRuntimeMods "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+    productionRuntimeMods "maven.modrinth:carpet:${project.carpet_version}"
 }
 
 fabricApi {
@@ -40,9 +45,71 @@ fabricApi {
         createSourceSet = true
         modId = "pearlrelay-gametest"
         enableGameTests = true
-        enableClientGameTests = false
+        enableClientGameTests = true
         eula = true
     }
+}
+
+def clientGameTestWindowArgs = [
+        "--width", "1280",
+        "--height", "720"
+]
+
+tasks.named("runClientGameTest").configure {
+    args clientGameTestWindowArgs
+}
+
+def gametestJar = tasks.register("gametestJar", Jar) {
+    archiveBaseName.set("${project.archives_base_name}-gametest")
+    from sourceSets.gametest.output
+}
+
+def productionClientGameTestRunDir =
+        layout.buildDirectory.dir("run/productionClientGameTest")
+
+def deleteProductionClientGameTestRunDir =
+        tasks.register("deleteProductionClientGameTestRunDir", Delete) {
+            delete productionClientGameTestRunDir
+        }
+
+def prepareProductionClientGameTestRunDir =
+        tasks.register("prepareProductionClientGameTestRunDir") {
+            dependsOn deleteProductionClientGameTestRunDir
+            def eulaFile = productionClientGameTestRunDir.map {
+                it.file("eula.txt")
+            }
+            outputs.file(eulaFile)
+            doLast {
+                def target = eulaFile.get().asFile
+                target.parentFile.mkdirs()
+                target.setText("eula=true\n", "UTF-8")
+            }
+        }
+
+tasks.register(
+        "runProductionClientGameTest",
+        net.fabricmc.loom.task.prod.ClientProductionRunTask
+) {
+    dependsOn prepareProductionClientGameTestRunDir
+    dependsOn gametestJar
+    mods.from gametestJar
+    // The release mod is server-only, so Fabric filters it as a client mod.
+    // Keep the exact built JAR on the launch classpath as well, allowing the
+    // test-only in-process dedicated-server bridge to call its production
+    // initializer without copying production classes into the test JAR.
+    classpath.from tasks.named("jar")
+    jvmArgs.add("-Dfabric.client.gametest")
+    jvmArgs.add("-Dpearlrelay.production.client.gametest=true")
+    // Fabric documents this workaround for GitHub Actions network
+    // synchronizer failures in production client GameTests.
+    jvmArgs.add("-Dfabric.client.gametest.disableNetworkSynchronizer=true")
+    programArgs.addAll(clientGameTestWindowArgs)
+    runDir.set(productionClientGameTestRunDir)
+    useXVFB.set(
+            providers.environmentVariable("CI")
+                    .map { it == "true" }
+                    .orElse(false)
+    )
 }
 
 test {
