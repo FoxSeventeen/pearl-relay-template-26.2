@@ -46,8 +46,23 @@
 - [x] Checkpoint C: Code review and RC readiness pass
 - [x] Task 10: Resolve `v1.0.0` tag provenance (unverified; do not create)
 - [ ] Task 10: Merge reviewed work from `v1.1-safe-trigger`
-- [ ] Task 10: Create and push annotated `v1.1.0-rc.1`
-- [ ] Task 10: Publish GitHub prerelease, JAR, SHA-256, and reports
+- [x] Task 10: Create and push annotated `v1.1.0-rc.1`
+- [x] Task 10: Publish GitHub prerelease, JAR, SHA-256, and reports
+
+## Phase 4.1: Headless hardening (`v1.1.0-rc.2`)
+
+- [x] Task 1: Freeze RC1 and create `headless-hardening`
+- [x] Task 2: Add a Java 25 GitHub Actions quality gate
+- [x] Task 2: Prove the quality gate rejects a deliberately failing assertion
+- [x] Task 3: Add full-dispatcher command GameTests with two UUIDs
+- [x] Task 3: Assert accepted/rejected/terminal log cardinality and cleanup
+- [x] Task 4: Reject unloaded spawn/path chunks before world or entity reads
+- [x] Task 4: Assert ticket, readiness, fake-player, and interaction stability
+- [x] Task 4: Cover positive and negative chunk boundaries
+- [x] Deploy and restart RC2 only in `/opt/minecraft-pearlrelay-test`
+- [x] Leave production and isolated test ports stopped after validation
+- [ ] Create and push annotated `v1.1.0-rc.2`
+- [ ] Publish RC2 GitHub prerelease, JAR, SHA-256, and report
 
 ## Phase 5: Player acceptance and final release
 
