@@ -75,6 +75,11 @@ public final class RelayPreflight {
 		if (!world.isChunkLoaded(targetChunkX, targetChunkZ)) {
 			return Decision.failed(RelayFailure.TARGET_CHUNK_UNLOADED);
 		}
+		RelayFailure chunkFailure =
+				RelayTargetResolver.unloadedChunkFailure(world, relay.spawn(), relay.lookAt());
+		if (chunkFailure != null) {
+			return Decision.failed(chunkFailure);
+		}
 		if (!Objects.equals(savedTarget.blockId(), world.blockId(targetPos))) {
 			return Decision.failed(RelayFailure.TARGET_BLOCK_CHANGED);
 		}

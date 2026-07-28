@@ -6,7 +6,8 @@
 	"environment": "server",
 	"entrypoints": {
 		"fabric-gametest": [
-			"com.foxseventeen.pearlrelay.test.PearlRelayGameTests"
+			"com.foxseventeen.pearlrelay.test.PearlRelayGameTests",
+			"com.foxseventeen.pearlrelay.test.PearlRelayCommandGameTests"
 		]
 	},
 	"depends": {

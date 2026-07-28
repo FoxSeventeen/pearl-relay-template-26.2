@@ -86,6 +86,43 @@ class RelayTargetResolverTest {
 
 		assertEquals(RelayFailure.TARGET_CHUNK_UNLOADED, result.failure());
 		assertEquals(0, world.clipCalls);
+		assertEquals(0, world.blockIdCalls);
+	}
+
+	@Test
+	void rejectsNegativeTargetChunkBoundaryWithoutWorldReads() {
+		Vec3 spawn = new Vec3(-15.5D, 64.0D, 8.5D);
+		Vec3 lookAcrossNegativeBoundary = new Vec3(-16.1D, 65.5D, 8.5D);
+		FakeWorld world = FakeWorld.ready();
+		world.fullChunks.clear();
+		world.entityTickingChunks.clear();
+		world.addReadyChunk(-1, 0);
+
+		RelayTargetResolver.Result result =
+				RelayTargetResolver.resolve(world, spawn, lookAcrossNegativeBoundary);
+
+		assertEquals(RelayFailure.TARGET_CHUNK_UNLOADED, result.failure());
+		assertFalse(world.spawnClearChecked);
+		assertEquals(0, world.clipCalls);
+		assertEquals(0, world.blockIdCalls);
+	}
+
+	@Test
+	void rejectsSpawnBoundsStraddlingNegativeChunkBoundary() {
+		Vec3 spawnOnBoundary = new Vec3(-16.0D, 64.0D, 8.5D);
+		Vec3 nearbyLookAt = new Vec3(-15.5D, 65.5D, 8.5D);
+		FakeWorld world = FakeWorld.ready();
+		world.fullChunks.clear();
+		world.entityTickingChunks.clear();
+		world.addReadyChunk(-1, 0);
+
+		RelayTargetResolver.Result result =
+				RelayTargetResolver.resolve(world, spawnOnBoundary, nearbyLookAt);
+
+		assertEquals(RelayFailure.SPAWN_CHUNK_UNLOADED, result.failure());
+		assertFalse(world.spawnClearChecked);
+		assertEquals(0, world.clipCalls);
+		assertEquals(0, world.blockIdCalls);
 	}
 
 	@Test
@@ -141,13 +178,18 @@ class RelayTargetResolverTest {
 		private boolean spawnClear = true;
 		private boolean spawnClearChecked;
 		private int clipCalls;
+		private int blockIdCalls;
 		private BlockHitResult hit = new BlockHitResult(LOOK_AT, Direction.NORTH, TARGET_POS, false);
 
 		private static FakeWorld ready() {
 			FakeWorld world = new FakeWorld();
-			world.fullChunks.add(chunkKey(0, 0));
-			world.entityTickingChunks.add(chunkKey(0, 0));
+			world.addReadyChunk(0, 0);
 			return world;
+		}
+
+		private void addReadyChunk(int chunkX, int chunkZ) {
+			fullChunks.add(chunkKey(chunkX, chunkZ));
+			entityTickingChunks.add(chunkKey(chunkX, chunkZ));
 		}
 
 		@Override
@@ -170,6 +212,7 @@ class RelayTargetResolverTest {
 
 		@Override
 		public String blockId(BlockPos pos) {
+			blockIdCalls++;
 			return "minecraft:note_block";
 		}
 

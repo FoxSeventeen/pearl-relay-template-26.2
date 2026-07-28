@@ -19,6 +19,7 @@ Minecraft 26.2 Ender Pearls keep their relevant chunk active. For this project, 
 - Preserve `spawn` and `lookAt` as activation data only.
 - On save, raycast from the fake player's eye position and persist the hit block position plus block registry ID.
 - On named fire, use non-loading entity-ticking checks and reject if any relevant chunk is unavailable. A FULL neighbor cached around another ticket is not considered ready.
+- Check the saved target chunk, fake-player spawn bounds, and complete look path before reading block state, checking collision, raycasting, or scanning entities. If an unloaded chunk and another fault coexist, the unloaded-chunk failure takes precedence.
 - Require at least one Ender Pearl owned by the invoking player in the target block's exact chunk.
 - Treat pearl count as a boolean readiness condition; never select, move, release, or otherwise control a pearl.
 - Fingerprint block type but not mutable block-state properties.
@@ -47,6 +48,7 @@ Rejected because it changes the mod from a safe trigger wrapper into device-spec
 ## Consequences
 
 - Invalid named fires have no fake-player or chunk-loading side effect.
+- An unloaded-chunk rejection performs readiness queries only; command-level GameTest records prove that the target remains absent from `getChunkNow`, its ticket snapshot is unchanged, and no fake player is created.
 - Legacy relays remain visible but require a one-time resave because their target type cannot be reconstructed safely.
 - Devices spanning chunk borders must keep the invoking player's pearl in the target block's chunk.
 - Server logs can prove command acceptance, one dispatched interaction, cleanup, and terminal status, but real-player testing is still required to prove an arbitrary stasis device teleports correctly.

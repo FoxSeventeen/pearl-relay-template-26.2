@@ -47,12 +47,99 @@ class RelayPreflightTest {
 	void rejectsUnloadedSavedTargetChunkBeforeBlockRead() {
 		FakeWorld world = FakeWorld.ready();
 		world.entityTickingChunks.clear();
+		boolean[] pearlCounterCalled = {false};
+		boolean[] occupancyCalled = {false};
 
-		RelayPreflight.Decision result = RelayPreflight.check(world, (owner, target) -> 1, relay(), OWNER);
+		RelayPreflight.Decision result = RelayPreflight.check(
+				world,
+				(owner, target) -> {
+					pearlCounterCalled[0] = true;
+					return 1;
+				},
+				spawn -> {
+					occupancyCalled[0] = true;
+					return false;
+				},
+				relay(),
+				OWNER
+		);
 
 		assertEquals(RelayFailure.TARGET_CHUNK_UNLOADED, result.failure());
 		assertEquals(0, world.blockIdCalls);
 		assertEquals(0, world.clipCalls);
+		assertFalse(world.spawnClearChecked);
+		assertFalse(pearlCounterCalled[0]);
+		assertFalse(occupancyCalled[0]);
+	}
+
+	@Test
+	void rejectsUnloadedSpawnChunkBeforeBlockOrEntityReads() {
+		FakeWorld world = FakeWorld.ready();
+		RelayDefinition boundaryRelay = new RelayDefinition(
+				"pr_11111111_edge",
+				Identifier.parse("minecraft:overworld"),
+				new Vec3(16.5D, 64.0D, 8.5D),
+				new Vec3(15.5D, 65.5D, 8.5D),
+				new TargetFingerprint(15, 65, 8, "minecraft:note_block")
+		);
+		boolean[] pearlCounterCalled = {false};
+		boolean[] occupancyCalled = {false};
+
+		RelayPreflight.Decision result = RelayPreflight.check(
+				world,
+				(owner, target) -> {
+					pearlCounterCalled[0] = true;
+					return 1;
+				},
+				spawn -> {
+					occupancyCalled[0] = true;
+					return false;
+				},
+				boundaryRelay,
+				OWNER
+		);
+
+		assertEquals(RelayFailure.SPAWN_CHUNK_UNLOADED, result.failure());
+		assertEquals(0, world.blockIdCalls);
+		assertEquals(0, world.clipCalls);
+		assertFalse(world.spawnClearChecked);
+		assertFalse(pearlCounterCalled[0]);
+		assertFalse(occupancyCalled[0]);
+	}
+
+	@Test
+	void rejectsUnloadedTargetPathBeforeBlockOrEntityReads() {
+		FakeWorld world = FakeWorld.ready();
+		RelayDefinition boundaryRelay = new RelayDefinition(
+				"pr_11111111_edge",
+				Identifier.parse("minecraft:overworld"),
+				new Vec3(15.5D, 64.0D, 8.5D),
+				new Vec3(16.1D, 65.5D, 8.5D),
+				new TargetFingerprint(15, 65, 8, "minecraft:note_block")
+		);
+		boolean[] pearlCounterCalled = {false};
+		boolean[] occupancyCalled = {false};
+
+		RelayPreflight.Decision result = RelayPreflight.check(
+				world,
+				(owner, target) -> {
+					pearlCounterCalled[0] = true;
+					return 1;
+				},
+				spawn -> {
+					occupancyCalled[0] = true;
+					return false;
+				},
+				boundaryRelay,
+				OWNER
+		);
+
+		assertEquals(RelayFailure.TARGET_CHUNK_UNLOADED, result.failure());
+		assertEquals(0, world.blockIdCalls);
+		assertEquals(0, world.clipCalls);
+		assertFalse(world.spawnClearChecked);
+		assertFalse(pearlCounterCalled[0]);
+		assertFalse(occupancyCalled[0]);
 	}
 
 	@Test
@@ -185,6 +272,7 @@ class RelayPreflightTest {
 		private final Set<Long> fullChunks = new HashSet<>();
 		private final Set<Long> entityTickingChunks = new HashSet<>();
 		private boolean spawnClear = true;
+		private boolean spawnClearChecked;
 		private String blockId = "minecraft:note_block";
 		private int readCount;
 		private int blockIdCalls;
@@ -208,6 +296,7 @@ class RelayPreflightTest {
 		@Override
 		public boolean isSpawnClear(AABB bounds) {
 			readCount++;
+			spawnClearChecked = true;
 			return spawnClear;
 		}
 

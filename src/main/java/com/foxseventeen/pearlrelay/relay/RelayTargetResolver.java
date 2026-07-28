@@ -56,13 +56,12 @@ public final class RelayTargetResolver {
 			return Result.failed(RelayFailure.TARGET_UNREACHABLE);
 		}
 
+		RelayFailure chunkFailure = unloadedChunkFailure(world, spawn, lookAt, geometry);
+		if (chunkFailure != null) {
+			return Result.failed(chunkFailure);
+		}
+
 		AABB spawnBounds = geometry.makeBoundingBox(spawn);
-		if (!allChunksLoaded(world, spawnBounds)) {
-			return Result.failed(RelayFailure.SPAWN_CHUNK_UNLOADED);
-		}
-		if (!allChunksLoaded(world, eye, lookAt)) {
-			return Result.failed(RelayFailure.TARGET_CHUNK_UNLOADED);
-		}
 		if (!world.isSpawnClear(spawnBounds)) {
 			return Result.failed(RelayFailure.SPAWN_POSITION_BLOCKED);
 		}
@@ -86,6 +85,39 @@ public final class RelayTargetResolver {
 				targetPos.getZ(),
 				world.blockId(targetPos)
 		));
+	}
+
+	static RelayFailure unloadedChunkFailure(WorldView world, Vec3 spawn, Vec3 lookAt) {
+		// This is only an early, side-effect-free chunk gate. The full resolver
+		// remains responsible for the stable TARGET_UNREACHABLE failure.
+		if (!isFinite(spawn) || !isFinite(lookAt)) {
+			return null;
+		}
+
+		PlayerGeometry geometry = PlayerGeometry.DEFAULT;
+		Vec3 eye = spawn.add(0.0D, geometry.eyeHeight(), 0.0D);
+		if (eye.distanceToSqr(lookAt) > geometry.reach() * geometry.reach()) {
+			return null;
+		}
+		return unloadedChunkFailure(world, spawn, lookAt, geometry);
+	}
+
+	private static RelayFailure unloadedChunkFailure(
+			WorldView world,
+			Vec3 spawn,
+			Vec3 lookAt,
+			PlayerGeometry geometry
+	) {
+		AABB spawnBounds = geometry.makeBoundingBox(spawn);
+		if (!allChunksLoaded(world, spawnBounds)) {
+			return RelayFailure.SPAWN_CHUNK_UNLOADED;
+		}
+
+		Vec3 eye = spawn.add(0.0D, geometry.eyeHeight(), 0.0D);
+		if (!allChunksLoaded(world, eye, lookAt)) {
+			return RelayFailure.TARGET_CHUNK_UNLOADED;
+		}
+		return null;
 	}
 
 	private static boolean allChunksLoaded(WorldView world, AABB bounds) {
