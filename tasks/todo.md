@@ -61,8 +61,8 @@
 - [x] Task 4: Cover positive and negative chunk boundaries
 - [x] Deploy and restart RC2 only in `/opt/minecraft-pearlrelay-test`
 - [x] Leave production and isolated test ports stopped after validation
-- [ ] Create and push annotated `v1.1.0-rc.2`
-- [ ] Publish RC2 GitHub prerelease, JAR, SHA-256, and report
+- [x] Create and push annotated `v1.1.0-rc.2`
+- [x] Publish RC2 GitHub prerelease, JAR, SHA-256, and report
 
 ## Phase 5: Player acceptance and final release
 
