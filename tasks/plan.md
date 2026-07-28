@@ -228,18 +228,18 @@ overwrites a legacy relay.
 
 **Acceptance criteria:**
 
-- [ ] Newly saved relay JSON contains schema version, target position, and block
+- [x] Newly saved relay JSON contains schema version, target position, and block
       registry ID.
-- [ ] Existing v1 JSON loads without deletion or server crash.
-- [ ] A legacy relay remains visible in `list` and returns a precise resave
+- [x] Existing v1 JSON loads without deletion or server crash.
+- [x] A legacy relay remains visible in `list` and returns a precise resave
       instruction from `fire`.
 
 **Verification:**
 
-- [ ] Unit tests cover v1 load, v2 round-trip, malformed/partial data, and
+- [x] Unit tests cover v1 load, v2 round-trip, malformed/partial data, and
       overwrite migration.
-- [ ] Golden JSON fixtures prove stable field names.
-- [ ] Build succeeds after the schema change.
+- [x] Golden JSON fixtures prove stable field names.
+- [x] Build succeeds after the schema change.
 
 **Dependencies:** Task 1
 

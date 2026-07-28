@@ -1,0 +1,22 @@
+{
+  "playerName": "PlayerOne",
+  "relays": {
+    "home": {
+      "bot": "pr_11111111_home",
+      "dimension": {
+        "namespace": "minecraft",
+        "path": "overworld"
+      },
+      "spawn": {
+        "x": 10.5,
+        "y": 64.0,
+        "z": 18.5
+      },
+      "lookAt": {
+        "x": 10.5,
+        "y": 64.5,
+        "z": 20.5
+      }
+    }
+  }
+}

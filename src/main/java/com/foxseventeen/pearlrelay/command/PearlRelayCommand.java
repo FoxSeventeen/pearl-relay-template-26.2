@@ -5,6 +5,7 @@ import carpet.helpers.EntityPlayerActionPack;
 import carpet.patches.EntityPlayerMPFake;
 import com.foxseventeen.pearlrelay.config.RelayConfigManager;
 import com.foxseventeen.pearlrelay.config.RelayConfigManager.RelayDefinition;
+import com.foxseventeen.pearlrelay.relay.RelayFailure;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -52,6 +53,12 @@ public final class PearlRelayCommand {
 	);
 	private static final DynamicCommandExceptionType RELAY_NOT_FOUND = new DynamicCommandExceptionType(
 			name -> Component.literal("Relay not found: " + name)
+	);
+	private static final DynamicCommandExceptionType RELAY_REQUIRES_RESAVE = new DynamicCommandExceptionType(
+			name -> Component.literal(
+					"[" + RelayFailure.RELAY_REQUIRES_RESAVE.code() + "] Relay '" + name
+							+ "' was saved without a target fingerprint. Save it again before firing."
+			)
 	);
 	private static final DynamicCommandExceptionType RELAY_CONFIG_ERROR = new DynamicCommandExceptionType(
 			message -> Component.literal("Relay config error: " + message)
@@ -222,6 +229,9 @@ public final class PearlRelayCommand {
 
 		if (relay == null) {
 			throw RELAY_NOT_FOUND.create(name);
+		}
+		if (relay.requiresResave()) {
+			throw RELAY_REQUIRES_RESAVE.create(name);
 		}
 
 		return trigger(context, relay.bot(), relay.dimension(), relay.spawn(), relay.lookAt());

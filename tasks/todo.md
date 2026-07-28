@@ -8,9 +8,9 @@
 
 - [x] Task 1: Make the Java 25 build portable
 - [x] Task 1: Add unit and Fabric GameTest harnesses
-- [ ] Task 2: Add typed preflight failure codes
-- [ ] Task 2: Add schema version and target fingerprint
-- [ ] Task 2: Preserve legacy configuration with resave guidance
+- [x] Task 2: Add typed preflight failure codes
+- [x] Task 2: Add schema version and target fingerprint
+- [x] Task 2: Preserve legacy configuration with resave guidance
 - [ ] Task 3: Resolve and validate the target during `save`
 - [ ] Checkpoint A: Build, config, and no-chunk-load checks pass
 
