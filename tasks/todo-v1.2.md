@@ -43,8 +43,8 @@
 ## Phase 4：RC 与发布
 
 - [x] Task 7：更新版本、README、CHANGELOG 和迁移说明
-- [ ] Task 7：创建并推送 annotated `v1.2.0-rc.1`
-- [ ] Task 7：发布 prerelease、JAR、SHA256SUMS 和验证报告
+- [x] Task 7：创建并推送 annotated `v1.2.0-rc.1`
+- [x] Task 7：发布 prerelease、JAR、SHA256SUMS 和验证报告
 - [x] Task 7：只在隔离服验证配置恢复、重启和孤儿状态
 - [x] Task 7：验证结束后保持生产服和隔离服停止
 - [ ] 项目所有者审查 RC 证据并批准或拒绝稳定版
@@ -67,4 +67,4 @@
 - [x] 配置失败不会丢失最近成功状态
 - [x] 保存和触发失败都没有假人、交互或区块加载副作用
 - [x] 发布 JAR 不包含测试代码或夹具
-- [ ] 提交、tag、Release、JAR 和服务器文件哈希一致
+- [x] 提交、tag、Release、JAR 和服务器文件哈希一致
