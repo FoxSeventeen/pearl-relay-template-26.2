@@ -64,6 +64,19 @@
 - [x] Create and push annotated `v1.1.0-rc.2`
 - [x] Publish RC2 GitHub prerelease, JAR, SHA-256, and report
 
+## 阶段 4.2：自动化玩家测试替代（实施中）
+
+- [x] 审查并批准
+      [`tasks/plan-client-e2e.md`](plan-client-e2e.md)
+- [ ] 执行
+      [`tasks/todo-client-e2e.md`](todo-client-e2e.md)
+- [x] 完成客户端边界可行性（Checkpoint A）
+- [x] 完成真实滞留装置传送（Checkpoint B）
+- [x] 完成玩家可见生命周期和生产 JAR 客户端本地门槛
+- [ ] 在同一提交上取得首个绿色客户端 E2E 工作流及可下载证据
+- [ ] 使用客户端 E2E 证据替代真实装置和玩家可见体验的人工回归
+- [ ] 单独决定是否有必要同时运行多个原生客户端
+
 ## Phase 5: Player acceptance and final release
 
 - [ ] Valid save/list/fire/remove

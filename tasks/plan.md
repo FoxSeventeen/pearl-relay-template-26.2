@@ -667,3 +667,14 @@ behavior without owner approval.
 - Pearl selection, movement, or direct activation
 - Proving arbitrary redstone outcomes without a device-specific signal
 - Production deployment before RC and player acceptance approval
+
+## 后续方案：自动化玩家测试替代
+
+使用真实客户端 Fabric GameTest 替代强制人工回归的后续方案见：
+
+- [`tasks/plan-client-e2e.md`](plan-client-e2e.md)
+- [`tasks/todo-client-e2e.md`](todo-client-e2e.md)
+
+该方案有意与已经完成的安全触发计划分开。MVP 包含一个真实 Minecraft
+客户端、确定性的珍珠滞留装置、生产客户端 CI 和重新定义的验收边界。
+是否同时运行多个原生客户端，留在独立决策门之后。

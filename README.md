@@ -136,12 +136,23 @@ grep 'event=relay_fire' logs/latest.log
 ./gradlew clean test build
 ```
 
-Fabric GameTest 会验证目标解析、珍珠所有权、方块类型/状态、单次右键和假人清理。隔离服务器和玩家验收结果记录在 `tasks/test-results/` 与 `docs/testing/`。
+真实客户端端到端检查（需要图形显示环境）：
 
-GitHub Actions 会在每次 push 和 pull request 中使用 Java 25 运行同一条
-`./gradlew --no-daemon clean test build` 质量门，并上传非 sources JAR、
-SHA-256 清单、JUnit 报告和 GameTest 日志。该工作流只读取仓库和公开依赖，
-不会连接生产服或隔离测试服，也不包含服务器凭据。
+```shell
+./gradlew runClientGameTest
+./gradlew runProductionClientGameTest
+```
+
+第一条从开发编译输出运行，第二条要求生产主类从实际发布 JAR 加载。两条
+客户端任务默认各重复 20 次；排查时可用环境变量
+`PEARLRELAY_CLIENT_TEST_REPETITIONS=1` 临时缩短。详细证据记录在
+`tasks/test-results/`。
+
+Fabric 服务端 GameTest 会验证目标解析、珍珠所有权、方块类型/状态、单次
+右键和假人清理。GitHub Actions 在每次 push 和 pull request 中使用
+Java 25 运行干净构建门槛，并在 XVFB 中运行生产客户端 GameTest；它会上传
+候选 JAR、SHA-256、提交 SHA、测试报告、日志、截图和崩溃数据。工作流只
+读取仓库和公开依赖，不会连接生产服或隔离测试服，也不包含服务器凭据。
 
 ## English summary
 
