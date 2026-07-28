@@ -64,16 +64,6 @@ public final class RelayExecutionManager {
 		Execution execution = new Execution(request.executionId(), request);
 		activeByBot.put(bot, execution);
 		notifyAccepted(new AcceptedResult(execution.id, request));
-		try {
-			SpawnStatus spawnStatus = runtime.spawn(request);
-			switch (spawnStatus) {
-				case READY -> aim(execution);
-				case SPAWNING -> execution.phase = Phase.WAITING_FOR_FAKE_PLAYER;
-				case FAILED -> beginCleanup(execution, RelayFailure.FAKE_PLAYER_CREATE_FAILED);
-			}
-		} catch (RuntimeException exception) {
-			beginCleanup(execution, RelayFailure.EXECUTION_INTERNAL_ERROR);
-		}
 		return StartResult.accepted(execution.id);
 	}
 
@@ -109,6 +99,7 @@ public final class RelayExecutionManager {
 		execution.durationTicks++;
 		try {
 			switch (execution.phase) {
+				case STARTING -> tickStarting(execution);
 				case WAITING_FOR_FAKE_PLAYER -> tickWaiting(execution);
 				case AIMING -> tickAiming(execution);
 				case POST_USE_DELAY -> tickPostUse(execution);
@@ -116,6 +107,15 @@ public final class RelayExecutionManager {
 			}
 		} catch (RuntimeException exception) {
 			beginCleanup(execution, RelayFailure.EXECUTION_INTERNAL_ERROR);
+		}
+	}
+
+	private void tickStarting(Execution execution) {
+		SpawnStatus spawnStatus = runtime.spawn(execution.request);
+		switch (spawnStatus) {
+			case READY -> aim(execution);
+			case SPAWNING -> execution.phase = Phase.WAITING_FOR_FAKE_PLAYER;
+			case FAILED -> beginCleanup(execution, RelayFailure.FAKE_PLAYER_CREATE_FAILED);
 		}
 	}
 
@@ -249,6 +249,7 @@ public final class RelayExecutionManager {
 	}
 
 	private enum Phase {
+		STARTING,
 		WAITING_FOR_FAKE_PLAYER,
 		AIMING,
 		POST_USE_DELAY,
@@ -308,7 +309,7 @@ public final class RelayExecutionManager {
 	private static final class Execution {
 		private final UUID id;
 		private final ExecutionRequest request;
-		private Phase phase = Phase.WAITING_FOR_FAKE_PLAYER;
+		private Phase phase = Phase.STARTING;
 		private int phaseTicks;
 		private int durationTicks;
 		private RelayFailure failure;

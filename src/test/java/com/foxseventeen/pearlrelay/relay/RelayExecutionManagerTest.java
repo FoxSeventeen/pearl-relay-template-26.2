@@ -68,6 +68,7 @@ class RelayExecutionManagerTest {
 	void successfulExecutionUsesExactlyOnce() {
 		StartResult start = manager.start(request());
 
+		assertEquals(0, runtime.spawnCalls);
 		tick(8);
 
 		assertTrue(start.isAccepted());
@@ -123,7 +124,7 @@ class RelayExecutionManagerTest {
 		assertTrue(first.isAccepted());
 		assertFalse(second.isAccepted());
 		assertEquals(RelayFailure.EXECUTION_ALREADY_ACTIVE, second.failure());
-		assertEquals(1, runtime.spawnCalls);
+		assertEquals(0, runtime.spawnCalls);
 		assertEquals(1, accepted.size());
 		assertEquals(1, manager.activeCount());
 	}
@@ -147,6 +148,7 @@ class RelayExecutionManagerTest {
 		runtime.spawnStatus = SpawnStatus.FAILED;
 
 		StartResult start = manager.start(request());
+		manager.tick();
 
 		assertTrue(start.isAccepted());
 		assertEquals(1, runtime.cleanupCalls);
