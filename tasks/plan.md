@@ -12,8 +12,9 @@
   `499ffe2023d692c1e4f2f0e47621879b4c63f3752d2292609cbf559d67c1d8a2`.
 - The existing production server remains stopped.
 - All automated live-server work used `/opt/minecraft-pearlrelay-test`.
-- RC tag/prerelease publication awaits owner approval; stable publication awaits
-  the documented real-player acceptance.
+- RC1 and RC2 were published. Client E2E phases 1–4 are complete, and the owner
+  approved the revised acceptance boundary on 2026-07-28. Stable publication
+  awaits a full rerun and final release decision on the exact candidate.
 
 ## Overview
 
@@ -41,8 +42,10 @@ rejected, completed, and failed trigger will produce a structured log event.
 - **Multiple pearls:** allowed. The check is boolean; no pearl is selected.
 - **Target integrity:** the saved target block type must still match. Mutable
   block state such as open/closed or powered/unpowered is not fingerprinted.
-- **Release gate:** headless checks produce `v1.1.0-rc.1`; real-player
-  acceptance is required before `v1.1.0`.
+- **Release gate:** the original headless checks produced `v1.1.0-rc.1`; the
+  current stable gate is the automated matrix in
+  `docs/testing/v1.1.0-player-acceptance.md`, owner approval, and a final
+  candidate rerun.
 - **Out of scope:** permissions, cooldowns, GUI, automatic chunk loading, and
   direct control or selection of an Ender Pearl.
 
@@ -147,16 +150,19 @@ cleanup. Only one active execution is allowed for the same generated bot name.
 
 ### 6. Define success honestly
 
-The server can prove that the fake player was created, aimed, issued one use
-action, and was removed. It cannot generically prove that every redstone device
-or pearl stasis design completed its physical purpose.
+Server-only checks prove that the fake player was created, aimed, issued one use
+action, and was removed. Production Client GameTest additionally proves that a
+real client-thrown pearl is retained, released, and teleports the connected
+player in the deterministic acceptance fixture. This does not generically prove
+every third-party redstone design or integration environment.
 
 The mod therefore reports:
 
 - `interaction dispatched` after the Carpet use action
 - `execution completed` after fake-player cleanup
 
-Actual pearl release/teleport remains a real-player acceptance test.
+Arbitrary device compatibility and subjective experience remain conditional
+exploratory checks only when the release makes a corresponding claim.
 
 ### 7. Use standard logs with stable key/value fields
 
@@ -477,7 +483,7 @@ Do not start or modify the production world.
 
 **Estimated scope:** Small/Medium (1-3 repository files plus isolated deployment)
 
-## Task 9: Prepare documentation and the complete player acceptance handoff
+## Task 9: Prepare documentation and the original player acceptance handoff
 
 **Description:** Update user documentation, create a curated changelog, document
 legacy relay resaving, and prepare the exact player test report before asking
@@ -491,6 +497,10 @@ the owner to join the game.
 - [x] CHANGELOG separates Added, Changed, Fixed, and Known Limitations.
 
 **Required player behaviors to test:**
+
+This was the original RC handoff matrix. Task 7 of
+`tasks/plan-client-e2e.md` later mapped all 16 behaviors to automated evidence;
+the list below is retained as historical scope, not as current manual steps.
 
 1. Save, list, fire, and remove a valid named relay.
 2. Trigger a real pearl stasis device and confirm the invoking player teleports.
@@ -591,29 +601,33 @@ Do not publish a tag from uncommitted or unverified sources.
 
 **Estimated scope:** Small
 
-## Task 11: Complete player acceptance and publish `v1.1.0`
+## Task 11: Approve the revised acceptance boundary and publish `v1.1.0`
 
-**Description:** The owner executes the documented real-player matrix. Fixes
-produce `rc.2`, `rc.3`, and so on. The final tag is cut only from the exact
-candidate that passed all mandatory checks.
+**Description:** The owner approves the revised boundary after reviewing the
+16-item evidence mapping. Fixes produce `rc.3`, `rc.4`, and so on. The final tag
+is cut only from the exact candidate that passed all mandatory automated gates.
 
 **Acceptance criteria:**
 
-- [ ] Every mandatory player behavior is marked pass with evidence or an
-      approved exception.
-- [ ] Actual pearl stasis teleport succeeds.
-- [ ] No orphan fake player, unintended chunk load, or unexplained failure
-      remains.
+- [x] Every former mandatory player behavior maps to named automated or isolated
+      evidence.
+- [x] A real client-thrown pearl is released and the connected player teleports
+      in both development and production-JAR Client GameTest.
+- [x] The project owner approved the revised acceptance boundary on 2026-07-28.
+- [ ] No automated blocker, orphan fake player, unintended chunk load, or
+      unexplained failure remains on the final candidate.
 
 **Verification:**
 
-- [ ] Archive the signed-off player acceptance report.
+- [ ] Archive the owner decision and exact candidate evidence record.
 - [ ] Rerun all automated tests on the final commit.
 - [ ] Build and checksum the final artifact.
+- [ ] Run one short exploratory check only if the release claims a specified
+      integration environment or subjective experience.
 - [ ] Create annotated tag `v1.1.0` and a non-prerelease GitHub Release.
 - [ ] Verify the published artifact hash and `fabric.mod.json` version.
 
-**Dependencies:** Task 10 and completed real-player acceptance
+**Dependencies:** Task 10 and owner approval of the revised acceptance boundary
 
 **Files likely touched:**
 
@@ -631,8 +645,9 @@ v1.1.0 is done only when:
 - [ ] Valid named triggers dispatch exactly one fake-player use action.
 - [ ] Every accepted execution has one terminal result and no orphan bot.
 - [ ] Target fingerprint and owned-pearl rules match the confirmed intent.
-- [ ] Unit, GameTest, remote headless, restart, and real-player tests pass.
-- [ ] The player handoff enumerates all concrete behaviors before testing begins.
+- [ ] Unit, server GameTest, client GameTest, production-JAR Client GameTest,
+      isolated-server, and restart tests pass on the final candidate.
+- [x] The acceptance boundary maps all 16 former player behaviors to evidence.
 - [ ] Documentation and migration guidance are current.
 - [ ] The final JAR, SHA-256, changelog, commit, annotated tag, and GitHub Release
       all identify `v1.1.0`.
@@ -646,7 +661,7 @@ v1.1.0 is done only when:
 | A target-chunk-only pearl search misses a device spanning a chunk border | Medium | Document target-chunk scope; do not silently widen or make radius configurable in v1.1 |
 | Legacy relays lack a trustworthy target fingerprint | Medium | Preserve data, refuse fire with resave guidance, never guess the historical block type |
 | Carpet fake-player creation completes asynchronously | High | State machine, deadlines, idempotent cleanup, delayed-spawn tests |
-| A use action is dispatched but the physical device does not activate | Medium | Report only dispatch/cleanup as server-proven; require real-device acceptance |
+| A use action is dispatched but an arbitrary physical device does not activate | Medium | Use the deterministic real-client fixture as the generic gate; explore a third-party design only when claiming its compatibility |
 | Fabric API differs between build (`0.152.2`) and current server (`0.152.1`) | Medium | Record both versions and test the RC against the intended deployed dependency set |
 | Current `1.0.0` has no repository tag | Medium | Verify provenance before retroactive tagging; otherwise document without inventing history |
 | No local Java runtime is available | Medium | Make the build portable and use the isolated server's existing Java 25 initially |
@@ -666,7 +681,7 @@ behavior without owner approval.
 - Configurable pearl search radius
 - Pearl selection, movement, or direct activation
 - Proving arbitrary redstone outcomes without a device-specific signal
-- Production deployment before RC and player acceptance approval
+- Production deployment before final automated evidence and owner approval
 
 ## 后续方案：自动化玩家测试替代
 
@@ -677,4 +692,5 @@ behavior without owner approval.
 
 该方案有意与已经完成的安全触发计划分开。MVP 包含一个真实 Minecraft
 客户端、确定性的珍珠滞留装置、生产客户端 CI 和重新定义的验收边界。
-是否同时运行多个原生客户端，留在独立决策门之后。
+决策门已经确认当前不需要同时运行多个原生客户端；如果以后增加客户端状态、
+自定义网络协议、代理身份转换或相应政策要求，再重新评估。

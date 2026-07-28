@@ -64,38 +64,27 @@
 - [x] Create and push annotated `v1.1.0-rc.2`
 - [x] Publish RC2 GitHub prerelease, JAR, SHA-256, and report
 
-## 阶段 4.2：自动化玩家测试替代（实施中）
+## 阶段 4.2：自动化玩家测试替代（完成）
 
 - [x] 审查并批准
       [`tasks/plan-client-e2e.md`](plan-client-e2e.md)
-- [ ] 执行
+- [x] 执行
       [`tasks/todo-client-e2e.md`](todo-client-e2e.md)
 - [x] 完成客户端边界可行性（Checkpoint A）
 - [x] 完成真实滞留装置传送（Checkpoint B）
 - [x] 完成玩家可见生命周期和生产 JAR 客户端本地门槛
 - [x] 在同一提交上取得首个绿色客户端 E2E 工作流及可下载证据
-- [ ] 使用客户端 E2E 证据替代真实装置和玩家可见体验的人工回归
-- [ ] 单独决定是否有必要同时运行多个原生客户端
+- [x] 使用客户端 E2E 证据替代真实装置和玩家可见体验的人工回归
+- [x] 已决定当前不需要同时运行多个原生客户端
 
-## Phase 5: Player acceptance and final release
+## Phase 5：稳定版审批与发布
 
-- [ ] Valid save/list/fire/remove
-- [ ] Real pearl stasis teleport
-- [ ] Correct fake-player spawn, aim, single use, and cleanup
-- [ ] Same block type with changed state remains valid
-- [ ] Replaced target block is rejected before bot creation
-- [ ] Loaded chunk without invoking-player pearl is rejected
-- [ ] Other-player pearl does not satisfy readiness
-- [ ] Multiple invoking-player pearls are allowed
-- [ ] Unloaded chunk is rejected without automatic loading
-- [ ] Blocked spawn or ray is rejected
-- [ ] Duplicate fire does not create duplicate active bots
-- [ ] Post-spawn failure still removes the bot
-- [ ] Configuration persists across restart
-- [ ] Legacy relay requests resave without data loss
-- [ ] Two real players cannot see or trigger each other's relays
-- [ ] Player messages and structured logs match outcomes
-- [ ] Fix failures through additional RC tags as needed
-- [ ] Rerun all automated tests on the accepted commit
-- [ ] Create and push annotated `v1.1.0`
-- [ ] Publish final GitHub Release and verify artifact SHA-256
+- [x] 原 16 项玩家回归全部映射到自动化或隔离服务端证据
+- [x] 删除重复的强制真人回归，只保留条件式探索检查
+- [x] 双原生客户端当前不提供新的服务端隔离证据，不实施
+- [x] 项目所有者批准修订后的发布门槛
+- [ ] 在最终候选提交上重跑全部自动化并核对证据产物
+- [ ] 如声明指定整合环境/主观体验承诺，完成一次短小探索检查
+- [ ] 修复阻断问题并按需创建新的 RC
+- [ ] 创建并推送带注释的 `v1.1.0`
+- [ ] 发布最终 GitHub Release 并核对产物 SHA-256

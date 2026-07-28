@@ -3,9 +3,11 @@
 Pearl Relay 是一个面向 Minecraft 26.2 的 Fabric 服务端模组。玩家可以保存一个 Carpet 假人的出生位置和看向位置，然后用 `/pearlrelay fire <名称>` 安全触发珍珠滞留装置。
 
 当前候选版本是 `1.1.0-rc.2`。它已经通过
-[自动化与无客户端测试](tasks/test-results/v1.1.0-rc.2.md)，但必须完成
-[玩家实机验收](docs/testing/v1.1.0-player-acceptance.md)后才能发布稳定版
-`1.1.0`。
+[自动化、隔离服务端和真实客户端端到端测试](tasks/test-results/v1.1.0-rc.2.md)。
+原 16 项机械式玩家回归已映射到自动化证据，项目所有者已批准
+[修订后的验收边界](docs/testing/v1.1.0-player-acceptance.md)。稳定版
+`1.1.0` 仍需在最终候选提交上重跑全部门槛并作最终发布决定；只有发布声明
+包含指定兼容环境或主观体验承诺时，才增加一次短小的探索性检查。
 
 ## 运行依赖
 
@@ -158,4 +160,4 @@ Java 25 运行干净构建门槛，并在 XVFB 中运行生产客户端 GameTest
 
 Pearl Relay is a server-only Fabric mod for Minecraft 26.2. A named relay stores a Carpet fake player's spawn and look target. Before `/pearlrelay fire <name>` creates the fake player, v1.1 checks the dimension, already-loaded chunks, spawn collision, saved target block type and reachability, and at least one Ender Pearl owned by the invoking player in the target block's chunk. It never loads chunks or selects/manipulates a pearl. A valid execution performs exactly one saved `spawn -> lookAt -> use` action and then removes the fake player.
 
-Legacy v1 relay files remain listable but must be saved again before use. See the table above for stable failure codes and [the player acceptance guide](docs/testing/v1.1.0-player-acceptance.md) for release testing.
+Legacy v1 relay files remain listable but must be saved again before use. See the table above for stable failure codes and [the release acceptance boundary](docs/testing/v1.1.0-player-acceptance.md).

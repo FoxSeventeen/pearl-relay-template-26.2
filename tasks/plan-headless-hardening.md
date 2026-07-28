@@ -8,6 +8,10 @@
 - 后续开发分支：`headless-hardening`（在 RC 基线固定后创建）
 - 当前候选 JAR SHA-256：
   `7fe3ee64fbc11cdab5af2abb1487e01c63fbaaaebbabe855a2b1889af457909b`
+- 本文件保留 RC2 无客户端硬化阶段的历史设计；当前稳定版门槛已由
+  [`tasks/plan-client-e2e.md`](plan-client-e2e.md) 和
+  [`docs/testing/v1.1.0-player-acceptance.md`](../docs/testing/v1.1.0-player-acceptance.md)
+  取代。
 
 ## 目标
 
@@ -51,7 +55,7 @@
                                       |
                                       +--> rc.1 保留或生成 rc.2
                                                   |
-                                                  +--> 玩家实机验收
+                                                  +--> 客户端 E2E 与验收边界审批
 ```
 
 ## Task 1：冻结并记录 RC 基线
