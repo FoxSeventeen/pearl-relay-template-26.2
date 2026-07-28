@@ -34,7 +34,7 @@
 - [x] Task 5：快照保存后完成真实装置传送和假人清理
 - [x] Task 5：开发客户端三个场景各 20/20
 - [x] Task 5：生产 JAR 客户端三个场景各 20/20
-- [ ] Task 5：上传日志、截图、提交 SHA 和候选 JAR SHA
+- [x] Task 5：上传日志、截图、提交 SHA 和候选 JAR SHA
 - [x] Task 6：运行至少 1,000 次固定种子生命周期压力测试
 - [x] Task 6：覆盖每个阶段异常和 shutdown/cleanup 竞态
 - [x] Task 6：每轮保持一次使用、一个终态、零 active execution
@@ -45,8 +45,8 @@
 - [x] Task 7：更新版本、README、CHANGELOG 和迁移说明
 - [ ] Task 7：创建并推送 annotated `v1.2.0-rc.1`
 - [ ] Task 7：发布 prerelease、JAR、SHA256SUMS 和验证报告
-- [ ] Task 7：只在隔离服验证配置恢复、重启和孤儿状态
-- [ ] Task 7：验证结束后保持生产服和隔离服停止
+- [x] Task 7：只在隔离服验证配置恢复、重启和孤儿状态
+- [x] Task 7：验证结束后保持生产服和隔离服停止
 - [ ] 项目所有者审查 RC 证据并批准或拒绝稳定版
 - [ ] Task 8：在最终候选提交上重跑完整自动化
 - [ ] Task 8：创建并推送 annotated `v1.2.0`
