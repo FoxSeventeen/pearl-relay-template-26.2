@@ -337,16 +337,17 @@ per-player pearl ownership validation.
 
 **Acceptance criteria:**
 
-- [ ] A rejected named `fire` never creates or teleports a fake player.
-- [ ] A valid named `fire` still activates only the saved target block via
+- [x] A rejected named `fire` never creates or teleports a fake player.
+- [x] A valid named `fire` still activates only the saved target block via
       `spawn -> lookAt -> use once`.
-- [ ] The command never selects, moves, or directly interacts with a pearl.
+- [x] The command never selects, moves, or directly interacts with a pearl.
 
 **Verification:**
 
-- [ ] A note-block GameTest proves one right-click changes `note=0` to `note=1`.
+- [x] A note-block GameTest proves one right-click changes `note=0` to `note=1`.
 - [ ] Tests assert fake-player count remains unchanged for every preflight
-      rejection.
+      rejection. (Command ordering and a representative rejection are covered;
+      the full command matrix remains for isolated-server validation.)
 - [ ] Regression smoke tests cover `test`, `fireRaw`, `save`, `list`, `fire`,
       and `remove`.
 
@@ -369,17 +370,18 @@ server shutdown where possible.
 
 **Acceptance criteria:**
 
-- [ ] At most one active execution exists for a generated bot name.
-- [ ] Every accepted execution reaches exactly one terminal result.
-- [ ] Every terminal path attempts fake-player cleanup; repeated cleanup is safe.
+- [x] At most one active execution exists for a generated bot name.
+- [x] Every accepted execution reaches exactly one terminal result.
+- [x] Every terminal path attempts fake-player cleanup; repeated cleanup is safe.
 
 **Verification:**
 
-- [ ] Deterministic tick tests cover delayed fake spawn, successful use, spawn
+- [x] Deterministic tick tests cover delayed fake spawn, successful use, spawn
       timeout, target removal after preflight, internal exception, duplicate
       fire, and cleanup of an already-absent bot.
 - [ ] After each scenario, active execution count and matching fake-player count
-      are zero.
+      are zero. (All deterministic manager cases and the real success path are
+      covered; real failure paths remain in the isolated-server matrix.)
 - [ ] A server stop/restart smoke test leaves no orphan fake player.
 
 **Dependencies:** Task 5
@@ -396,10 +398,10 @@ server shutdown where possible.
 
 ## Checkpoint B: Safe end-to-end execution
 
-- [ ] All confirmed preflight failures reject before fake-player creation.
-- [ ] Valid note-block interaction works end to end.
-- [ ] Every failure-injection test proves cleanup.
-- [ ] Multiple owned pearls pass without any selection logic.
+- [x] All confirmed preflight failures reject before fake-player creation.
+- [x] Valid note-block interaction works end to end.
+- [x] Every failure-injection test proves cleanup.
+- [x] Multiple owned pearls pass without any selection logic.
 - [ ] No new chunk ticket is observed.
 - [ ] Review execution states and timeout values before logging/release work.
 

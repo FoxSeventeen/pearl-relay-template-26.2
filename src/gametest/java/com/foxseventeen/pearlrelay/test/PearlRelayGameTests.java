@@ -2,6 +2,8 @@ package com.foxseventeen.pearlrelay.test;
 
 import com.foxseventeen.pearlrelay.config.RelayConfigManager.RelayDefinition;
 import com.foxseventeen.pearlrelay.config.RelayConfigManager.TargetFingerprint;
+import com.foxseventeen.pearlrelay.relay.CarpetRelayRuntime;
+import com.foxseventeen.pearlrelay.relay.RelayExecutionManager;
 import com.foxseventeen.pearlrelay.relay.RelayFailure;
 import com.foxseventeen.pearlrelay.relay.RelayPreflight;
 import com.foxseventeen.pearlrelay.relay.RelayTargetResolver;
@@ -19,6 +21,8 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.Vec3;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 
 public final class PearlRelayGameTests implements CustomTestMethodInvoker {
 	@GameTest
@@ -101,10 +105,15 @@ public final class PearlRelayGameTests implements CustomTestMethodInvoker {
 		BlockPos target = new BlockPos(0, 1, 3);
 		context.setBlock(target, Blocks.LEVER);
 		Player owner = context.makeMockServerPlayer(GameType.SURVIVAL);
+		String rejectedBot = "pr_gametest";
 
 		RelayPreflight.Result result = preflight(context, owner, target, "minecraft:note_block");
 
 		context.assertValueEqual(result.failure(), RelayFailure.TARGET_BLOCK_CHANGED, "changed block failure");
+		context.assertTrue(
+				context.getLevel().getServer().getPlayerList().getPlayerByName(rejectedBot) == null,
+				"Rejected preflight must not create its fake player"
+		);
 		context.succeed();
 	}
 
@@ -145,6 +154,64 @@ public final class PearlRelayGameTests implements CustomTestMethodInvoker {
 				"unavailable dimension failure"
 		);
 		context.succeed();
+	}
+
+	@GameTest(maxTicks = 80)
+	public void executionRightClicksNoteOnceAndCleansFakePlayer(GameTestHelper context) {
+		BlockPos spawnFloor = new BlockPos(0, -1, 0);
+		BlockPos target = new BlockPos(0, 1, 3);
+		context.setBlock(spawnFloor, Blocks.STONE);
+		context.setBlock(target, Blocks.NOTE_BLOCK);
+
+		BlockPos absoluteTarget = context.absolutePos(target);
+		RelayDefinition relay = new RelayDefinition(
+				"pr_gametest_exec",
+				context.getLevel().dimension().identifier(),
+				context.absoluteVec(new Vec3(0.5D, 0.0D, 0.5D)),
+				context.absoluteVec(Vec3.atCenterOf(target)),
+				new TargetFingerprint(
+						absoluteTarget.getX(),
+						absoluteTarget.getY(),
+						absoluteTarget.getZ(),
+						"minecraft:note_block"
+				)
+		);
+		RelayPreflight.ValidatedRelay validated =
+				new RelayPreflight.ValidatedRelay(context.getLevel(), relay, 1);
+		List<RelayExecutionManager.TerminalResult> terminals = new ArrayList<>();
+		RelayExecutionManager manager = new RelayExecutionManager(
+				new CarpetRelayRuntime(),
+				new RelayExecutionManager.Timings(40, 2, 8, 10),
+				terminals::add
+		);
+
+		RelayExecutionManager.StartResult start = manager.start(
+				new RelayExecutionManager.ExecutionRequest(
+						"gametest",
+						context.makeMockServerPlayer(GameType.SURVIVAL).getUUID(),
+						validated
+				)
+		);
+		context.assertTrue(start.isAccepted(), "Expected Carpet execution to start");
+		for (int tick = 1; tick <= 60; tick++) {
+			context.runAtTickTime(tick, manager::tick);
+		}
+		context.runAtTickTime(61, () -> {
+			int activeBeforeShutdown = manager.activeCount();
+			boolean fakePlayerPresent = context.getLevel().getServer()
+					.getPlayerList()
+					.getPlayerByName(relay.bot()) != null;
+			int terminalCount = terminals.size();
+			boolean terminalSuccess = terminalCount == 1 && terminals.getFirst().success();
+			manager.shutdown();
+
+			context.assertBlockProperty(target, net.minecraft.world.level.block.NoteBlock.NOTE, 1);
+			context.assertValueEqual(activeBeforeShutdown, 0, "active executions after cleanup");
+			context.assertFalse(fakePlayerPresent, "Fake player must be absent after cleanup");
+			context.assertValueEqual(terminalCount, 1, "terminal result count");
+			context.assertTrue(terminalSuccess, "Expected successful terminal result");
+			context.succeed();
+		});
 	}
 
 	@GameTest

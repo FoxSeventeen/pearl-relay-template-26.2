@@ -18,7 +18,7 @@ public final class RelayExecutionManager {
 		this(runtime, DEFAULT_TIMINGS, terminalListener);
 	}
 
-	RelayExecutionManager(Runtime runtime, Timings timings, Consumer<TerminalResult> terminalListener) {
+	public RelayExecutionManager(Runtime runtime, Timings timings, Consumer<TerminalResult> terminalListener) {
 		this.runtime = runtime;
 		this.timings = timings;
 		this.terminalListener = terminalListener;

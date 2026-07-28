@@ -20,10 +20,10 @@
 - [x] Task 4: Require at least one invoking-player pearl in target chunk
 - [x] Task 4: Allow multiple owned pearls without selecting one
 - [x] Task 4: Reject changed block type but allow state changes
-- [ ] Task 5: Run preflight before fake-player creation
-- [ ] Task 5: Preserve `spawn -> lookAt -> use once` activation
-- [ ] Task 6: Add execution lifecycle, deadlines, and idempotent cleanup
-- [ ] Task 6: Reject duplicate active execution for the same bot
+- [x] Task 5: Run preflight before fake-player creation
+- [x] Task 5: Preserve `spawn -> lookAt -> use once` activation
+- [x] Task 6: Add execution lifecycle, deadlines, and idempotent cleanup
+- [x] Task 6: Reject duplicate active execution for the same bot
 - [ ] Checkpoint B: End-to-end and failure-injection tests pass
 
 ## Phase 3: Observability and remote validation
