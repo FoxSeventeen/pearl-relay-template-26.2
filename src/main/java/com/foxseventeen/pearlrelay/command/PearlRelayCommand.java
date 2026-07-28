@@ -1,6 +1,7 @@
 package com.foxseventeen.pearlrelay.command;
 
 import com.foxseventeen.pearlrelay.PearlRelayMod;
+import com.foxseventeen.pearlrelay.config.RelayConfigException;
 import com.foxseventeen.pearlrelay.config.RelayConfigManager;
 import com.foxseventeen.pearlrelay.config.RelayConfigManager.RelayDefinition;
 import com.foxseventeen.pearlrelay.relay.CarpetRelayRuntime;
@@ -178,7 +179,7 @@ public final class PearlRelayCommand {
 					targetResult.target()
 			);
 		} catch (IOException exception) {
-			throw RELAY_CONFIG_ERROR.create(exception.getMessage());
+			throw configError(exception);
 		}
 
 		context.getSource().sendSuccess(
@@ -208,7 +209,7 @@ public final class PearlRelayCommand {
 					0,
 					RelayFailure.EXECUTION_INTERNAL_ERROR
 			);
-			throw RELAY_CONFIG_ERROR.create(exception.getMessage());
+			throw configError(exception);
 		}
 
 		if (relay == null) {
@@ -250,7 +251,7 @@ public final class PearlRelayCommand {
 		try {
 			names = RelayConfigManager.names(player.getUUID());
 		} catch (IOException exception) {
-			throw RELAY_CONFIG_ERROR.create(exception.getMessage());
+			throw configError(exception);
 		}
 
 		String message = names.isEmpty() ? "No pearl relays saved." : "Pearl relays: " + String.join(", ", names);
@@ -265,7 +266,7 @@ public final class PearlRelayCommand {
 		try {
 			removed = RelayConfigManager.remove(player.getUUID(), name);
 		} catch (IOException exception) {
-			throw RELAY_CONFIG_ERROR.create(exception.getMessage());
+			throw configError(exception);
 		}
 
 		if (!removed) {
@@ -327,6 +328,13 @@ public final class PearlRelayCommand {
 			default -> "target validation failed";
 		};
 		return "[" + failure.code() + "] Cannot save relay: " + detail + ".";
+	}
+
+	private static CommandSyntaxException configError(IOException exception) {
+		String detail = exception instanceof RelayConfigException
+				? exception.getMessage()
+				: "[CONFIG_IO_ERROR] Relay config operation failed.";
+		return RELAY_CONFIG_ERROR.create(detail);
 	}
 
 }

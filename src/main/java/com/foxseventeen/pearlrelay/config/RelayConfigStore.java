@@ -1,7 +1,9 @@
 package com.foxseventeen.pearlrelay.config;
 
+import com.foxseventeen.pearlrelay.PearlRelayMod;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.Vec3;
 
@@ -80,17 +82,123 @@ final class RelayConfigStore {
 			return new PlayerRelayFile();
 		}
 
+		try {
+			return readValid(path);
+		} catch (InvalidConfigException exception) {
+			recover(playerId, path, exception);
+			throw new AssertionError("Config recovery must return by throwing");
+		}
+	}
+
+	private PlayerRelayFile readValid(Path path) throws IOException, InvalidConfigException {
 		try (Reader reader = Files.newBufferedReader(path)) {
-			PlayerRelayFile file = GSON.fromJson(reader, PlayerRelayFile.class);
-			if (file == null) {
-				file = new PlayerRelayFile();
+			PlayerRelayFile file;
+			try {
+				file = GSON.fromJson(reader, PlayerRelayFile.class);
+			} catch (JsonParseException | IllegalStateException exception) {
+				throw new InvalidConfigException(exception);
 			}
-			if (file.relays == null) {
-				file.relays = new LinkedHashMap<>();
-			}
-			file.relays.entrySet().removeIf(entry -> entry.getValue() == null || !entry.getValue().isValid());
+			validate(file);
 			return file;
 		}
+	}
+
+	private void validate(PlayerRelayFile file) throws InvalidConfigException {
+		if (file == null
+				|| file.schemaVersion < 0
+				|| file.schemaVersion > CURRENT_SCHEMA_VERSION
+				|| file.relays == null) {
+			throw new InvalidConfigException();
+		}
+
+		boolean targetRequired = file.schemaVersion == CURRENT_SCHEMA_VERSION;
+		for (Map.Entry<String, RelayConfigManager.RelayDefinition> entry : file.relays.entrySet()) {
+			if (entry.getKey() == null
+					|| entry.getKey().isBlank()
+					|| !isValid(entry.getValue(), targetRequired)) {
+				throw new InvalidConfigException();
+			}
+		}
+	}
+
+	private static boolean isValid(
+			RelayConfigManager.RelayDefinition relay,
+			boolean targetRequired
+	) {
+		if (relay == null
+				|| relay.bot() == null
+				|| relay.bot().isBlank()
+				|| relay.bot().length() > 16
+				|| relay.dimension() == null
+				|| !isFinite(relay.spawn())
+				|| !isFinite(relay.lookAt())) {
+			return false;
+		}
+		return targetRequired
+				? relay.target() != null && relay.target().isValid()
+				: relay.target() == null || relay.target().isValid();
+	}
+
+	private static boolean isFinite(Vec3 position) {
+		return position != null
+				&& Double.isFinite(position.x)
+				&& Double.isFinite(position.y)
+				&& Double.isFinite(position.z);
+	}
+
+	private void recover(UUID playerId, Path path, InvalidConfigException cause) throws IOException {
+		Path backup = AtomicConfigWriter.backupPath(path);
+		if (!Files.exists(backup) || !isValidBackup(backup)) {
+			logRecovery(playerId, path, RelayConfigException.Code.CONFIG_CORRUPT);
+			throw new RelayConfigException(RelayConfigException.Code.CONFIG_CORRUPT, cause);
+		}
+
+		try {
+			byte[] corruptContent = Files.readAllBytes(path);
+			writer.replaceWithoutBackup(nextCorruptPath(path), corruptContent);
+			writer.replaceWithoutBackup(path, Files.readAllBytes(backup));
+		} catch (IOException exception) {
+			logRecovery(playerId, path, RelayConfigException.Code.CONFIG_RECOVERY_FAILED);
+			throw new RelayConfigException(
+					RelayConfigException.Code.CONFIG_RECOVERY_FAILED,
+					exception
+			);
+		}
+
+		logRecovery(playerId, path, RelayConfigException.Code.CONFIG_RECOVERED_RETRY);
+		throw new RelayConfigException(RelayConfigException.Code.CONFIG_RECOVERED_RETRY, cause);
+	}
+
+	private boolean isValidBackup(Path backup) {
+		try {
+			readValid(backup);
+			return true;
+		} catch (IOException | InvalidConfigException exception) {
+			return false;
+		}
+	}
+
+	private static Path nextCorruptPath(Path path) {
+		Path candidate = path.resolveSibling(path.getFileName() + ".corrupt-1");
+		int index = 1;
+		while (Files.exists(candidate)) {
+			index++;
+			candidate = path.resolveSibling(path.getFileName() + ".corrupt-" + index);
+		}
+		return candidate;
+	}
+
+	private static void logRecovery(
+			UUID playerId,
+			Path path,
+			RelayConfigException.Code code
+	) {
+		PearlRelayMod.LOGGER.warn(
+				"event=relay_config action=load failure_code={} player_uuid={} file={}",
+				code,
+				playerId,
+				path.getFileName()
+		);
 	}
 
 	private void save(UUID playerId, PlayerRelayFile file) throws IOException {
@@ -118,8 +226,17 @@ final class RelayConfigStore {
 	}
 
 	private static final class PlayerRelayFile {
-		private int schemaVersion = CURRENT_SCHEMA_VERSION;
+		private int schemaVersion;
 		private String playerName;
 		private Map<String, RelayConfigManager.RelayDefinition> relays = new LinkedHashMap<>();
+	}
+
+	private static final class InvalidConfigException extends Exception {
+		private InvalidConfigException() {
+		}
+
+		private InvalidConfigException(Throwable cause) {
+			super(cause);
+		}
 	}
 }

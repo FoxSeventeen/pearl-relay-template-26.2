@@ -22,18 +22,16 @@ final class AtomicConfigWriter {
 	void write(Path target, byte[] content) throws IOException {
 		Path parent = target.getParent();
 		files.createDirectories(parent);
-		Path pending = null;
+		Path pending = prepare(parent, target.getFileName() + ".", content);
 		Path backupPending = null;
 
 		try {
-			pending = files.createTempFile(parent, target.getFileName() + ".", ".tmp");
-			files.write(pending, content);
-			files.sync(pending);
-
 			if (files.exists(target)) {
-				backupPending = files.createTempFile(parent, target.getFileName() + ".bak.", ".tmp");
-				files.copy(target, backupPending);
-				files.sync(backupPending);
+				backupPending = prepareCopy(
+						target,
+						parent,
+						target.getFileName() + ".bak."
+				);
 				files.replace(backupPending, backupPath(target));
 				backupPending = null;
 			}
@@ -45,6 +43,51 @@ final class AtomicConfigWriter {
 				files.deleteIfExists(backupPending);
 			}
 			if (pending != null) {
+				files.deleteIfExists(pending);
+			}
+		}
+	}
+
+	void replaceWithoutBackup(Path target, byte[] content) throws IOException {
+		Path parent = target.getParent();
+		files.createDirectories(parent);
+		Path pending = prepare(parent, target.getFileName() + ".", content);
+
+		try {
+			files.replace(pending, target);
+			pending = null;
+		} finally {
+			if (pending != null) {
+				files.deleteIfExists(pending);
+			}
+		}
+	}
+
+	private Path prepare(Path parent, String prefix, byte[] content) throws IOException {
+		Path pending = files.createTempFile(parent, prefix, ".tmp");
+		boolean ready = false;
+		try {
+			files.write(pending, content);
+			files.sync(pending);
+			ready = true;
+			return pending;
+		} finally {
+			if (!ready) {
+				files.deleteIfExists(pending);
+			}
+		}
+	}
+
+	private Path prepareCopy(Path source, Path parent, String prefix) throws IOException {
+		Path pending = files.createTempFile(parent, prefix, ".tmp");
+		boolean ready = false;
+		try {
+			files.copy(source, pending);
+			files.sync(pending);
+			ready = true;
+			return pending;
+		} finally {
+			if (!ready) {
 				files.deleteIfExists(pending);
 			}
 		}
@@ -72,7 +115,7 @@ final class AtomicConfigWriter {
 		void deleteIfExists(Path path) throws IOException;
 	}
 
-	static final class NioFileOperations implements FileOperations {
+	static class NioFileOperations implements FileOperations {
 		@Override
 		public void createDirectories(Path directory) throws IOException {
 			Files.createDirectories(directory);
