@@ -33,7 +33,9 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.Set;
@@ -77,10 +79,11 @@ public final class PearlRelayCommand {
 													.then(Commands.argument("spawn", Vec3Argument.vec3())
 															.then(Commands.argument("lookAt", Vec3Argument.vec3())
 																	.executes(PearlRelayCommand::fireRaw))))))
-							.then(Commands.literal("save")
-									.then(Commands.argument("name", StringArgumentType.word())
-											.then(Commands.argument("dimension", IdentifierArgument.id())
-													.suggests(PearlRelayCommand::suggestDimensions)
+						.then(Commands.literal("save")
+								.then(Commands.argument("name", StringArgumentType.word())
+										.executes(PearlRelayCommand::savePlayerSnapshot)
+										.then(Commands.argument("dimension", IdentifierArgument.id())
+												.suggests(PearlRelayCommand::suggestDimensions)
 													.then(Commands.argument("spawn", Vec3Argument.vec3())
 															.then(Commands.argument("lookAt", Vec3Argument.vec3())
 																	.executes(PearlRelayCommand::saveRelay))))))
@@ -162,6 +165,41 @@ public final class PearlRelayCommand {
 		Vec3 lookAtPos = Vec3Argument.getVec3(context, "lookAt");
 		ServerPlayer player = context.getSource().getPlayerOrException();
 		ServerLevel level = resolveDimension(context, dimension);
+		return saveRelay(context, name, player, level, dimension, spawnPos, lookAtPos);
+	}
+
+	private static int savePlayerSnapshot(
+			CommandContext<CommandSourceStack> context
+	) throws CommandSyntaxException {
+		String name = StringArgumentType.getString(context, "name");
+		ServerPlayer player = context.getSource().getPlayerOrException();
+		HitResult hit = player.pick(Player.DEFAULT_BLOCK_INTERACTION_RANGE, 1.0F, false);
+		if (hit.getType() != HitResult.Type.BLOCK) {
+			throw RELAY_SAVE_REJECTED.create(RelayFailure.TARGET_UNREACHABLE);
+		}
+
+		ServerLevel level = player.level();
+		Identifier dimension = level.dimension().identifier();
+		return saveRelay(
+				context,
+				name,
+				player,
+				level,
+				dimension,
+				player.position(),
+				hit.getLocation()
+		);
+	}
+
+	private static int saveRelay(
+			CommandContext<CommandSourceStack> context,
+			String name,
+			ServerPlayer player,
+			ServerLevel level,
+			Identifier dimension,
+			Vec3 spawnPos,
+			Vec3 lookAtPos
+	) throws CommandSyntaxException {
 		RelayTargetResolver.Result targetResult = RelayTargetResolver.resolve(level, spawnPos, lookAtPos);
 		if (!targetResult.isSuccess()) {
 			throw RELAY_SAVE_REJECTED.create(targetResult.failure());

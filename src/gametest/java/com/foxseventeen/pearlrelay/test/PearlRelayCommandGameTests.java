@@ -8,6 +8,7 @@ import net.fabricmc.fabric.api.gametest.v1.CustomTestMethodInvoker;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.Connection;
@@ -26,6 +27,8 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.TicketStorage;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LogEvent;
@@ -45,6 +48,55 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public final class PearlRelayCommandGameTests implements CustomTestMethodInvoker {
 	private static final BlockPos TARGET = new BlockPos(0, 1, 3);
+
+	@GameTest
+	public void commandSnapshotSaveCapturesPlayerPositionDimensionAndViewHit(
+			GameTestHelper context
+	) throws Exception {
+		prepareDevice(context);
+		Vec3 relativeSpawn = new Vec3(0.375D, 0.0D, 0.625D);
+		Vec3 spawn = context.absoluteVec(relativeSpawn);
+		CapturingPlayer owner = createPlayer(context, "snapshot", relativeSpawn);
+		String relayName = uniqueRelay("snapshot");
+
+		try {
+			Vec3 targetCenter = context.absoluteVec(Vec3.atCenterOf(TARGET));
+			owner.lookAt(EntityAnchorArgument.Anchor.EYES, targetCenter);
+			HitResult playerHit = owner.pick(
+					Player.DEFAULT_BLOCK_INTERACTION_RANGE,
+					1.0F,
+					false
+			);
+			context.assertValueEqual(playerHit.getType(), HitResult.Type.BLOCK, "player view hit type");
+			BlockHitResult blockHit = (BlockHitResult) playerHit;
+			context.assertValueEqual(
+					blockHit.getBlockPos(),
+					context.absolutePos(TARGET),
+					"player view target block"
+			);
+			Vec3 expectedHit = blockHit.getLocation();
+
+			assertCommandSucceeded(context, "pearlrelay save " + relayName, owner);
+
+			RelayConfigManager.RelayDefinition relay =
+					RelayConfigManager.get(owner.getUUID(), relayName);
+			BlockPos absoluteTarget = context.absolutePos(TARGET);
+			context.assertValueEqual(relay.dimension(), context.getLevel().dimension().identifier(), "dimension");
+			context.assertValueEqual(relay.spawn(), spawn, "exact player feet position");
+			context.assertValueEqual(relay.lookAt(), expectedHit, "exact player block hit");
+			context.assertValueEqual(relay.target().x(), absoluteTarget.getX(), "target x");
+			context.assertValueEqual(relay.target().y(), absoluteTarget.getY(), "target y");
+			context.assertValueEqual(relay.target().z(), absoluteTarget.getZ(), "target z");
+			context.assertValueEqual(relay.target().blockId(), "minecraft:note_block", "target block");
+			context.succeed();
+		} finally {
+			Files.deleteIfExists(playerConfig(owner.getUUID()));
+			Files.deleteIfExists(playerConfig(owner.getUUID()).resolveSibling(
+					playerConfig(owner.getUUID()).getFileName() + ".bak"
+			));
+			owner.close();
+		}
+	}
 
 	@GameTest
 	public void commandTestSaveListRemoveAndSuggestionsAreIsolated(GameTestHelper context) throws Exception {

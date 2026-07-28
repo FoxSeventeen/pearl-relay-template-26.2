@@ -16,6 +16,7 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 
 public final class RelayTargetResolver {
 	private static final double CHUNK_EDGE_EPSILON = 1.0E-7D;
+	private static final double TARGET_FACE_EPSILON = 1.0E-5D;
 
 	private RelayTargetResolver() {
 	}
@@ -66,13 +67,20 @@ public final class RelayTargetResolver {
 			return Result.failed(RelayFailure.SPAWN_POSITION_BLOCKED);
 		}
 
-		BlockHitResult hit = world.clip(eye, lookAt);
+		Vec3 clipEnd = lookAt.add(
+				lookAt.subtract(eye).normalize().scale(TARGET_FACE_EPSILON)
+		);
+		BlockHitResult hit = world.clip(eye, clipEnd);
 		if (hit.getType() != HitResult.Type.BLOCK) {
 			return Result.failed(RelayFailure.TARGET_UNREACHABLE);
 		}
 
 		BlockPos targetPos = hit.getBlockPos();
-		if (!targetPos.equals(BlockPos.containing(lookAt))) {
+		boolean lookAtInsideTarget = targetPos.equals(BlockPos.containing(lookAt));
+		boolean lookAtIsExactHit =
+				hit.getLocation().distanceToSqr(lookAt)
+						<= TARGET_FACE_EPSILON * TARGET_FACE_EPSILON;
+		if (!lookAtInsideTarget && !lookAtIsExactHit) {
 			return Result.failed(RelayFailure.TARGET_UNREACHABLE);
 		}
 		if (!world.isChunkLoaded(chunkCoordinate(targetPos.getX()), chunkCoordinate(targetPos.getZ()))) {

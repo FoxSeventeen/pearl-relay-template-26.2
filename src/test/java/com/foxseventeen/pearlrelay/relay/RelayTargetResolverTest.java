@@ -162,6 +162,26 @@ class RelayTargetResolverTest {
 	}
 
 	@Test
+	void acceptsAnExactHitPointOnTheNearFaceOfTheTargetBlock() {
+		Vec3 spawn = new Vec3(8.5, 64.0, 14.5);
+		Vec3 surfaceHit = new Vec3(8.5, 65.5, 13.0);
+		FakeWorld world = FakeWorld.ready();
+		world.hit = new BlockHitResult(
+				surfaceHit,
+				Direction.SOUTH,
+				new BlockPos(8, 65, 12),
+				false
+		);
+
+		RelayTargetResolver.Result result =
+				RelayTargetResolver.resolve(world, spawn, surfaceHit);
+
+		assertTrue(result.isSuccess());
+		assertEquals(new TargetFingerprint(8, 65, 12, "minecraft:note_block"), result.target());
+		assertTrue(world.clipTo.z < surfaceHit.z, "raycast must continue just beyond the block face");
+	}
+
+	@Test
 	void rejectsLookTargetOutsideSurvivalReach() {
 		FakeWorld world = FakeWorld.ready();
 		Vec3 tooFar = new Vec3(8.5, 65.62, 20.0);
@@ -179,6 +199,7 @@ class RelayTargetResolverTest {
 		private boolean spawnClearChecked;
 		private int clipCalls;
 		private int blockIdCalls;
+		private Vec3 clipTo;
 		private BlockHitResult hit = new BlockHitResult(LOOK_AT, Direction.NORTH, TARGET_POS, false);
 
 		private static FakeWorld ready() {
@@ -207,6 +228,7 @@ class RelayTargetResolverTest {
 		@Override
 		public BlockHitResult clip(Vec3 from, Vec3 to) {
 			clipCalls++;
+			clipTo = to;
 			return hit;
 		}
 
