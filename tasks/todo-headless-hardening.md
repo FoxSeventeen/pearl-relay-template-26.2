@@ -9,9 +9,9 @@
 - [x] Task 1：发布 `v1.1.0-rc.1` annotated tag
 - [x] Task 1：发布 GitHub prerelease 与已验证 JAR
 - [x] Task 1：从冻结基线创建 `headless-hardening`
-- [ ] Task 2：增加 Java 25 GitHub Actions
-- [ ] Task 2：上传 JAR、测试报告和 SHA-256
-- [ ] Checkpoint A：全新 CI 环境可复现构建
+- [x] Task 2：增加 Java 25 GitHub Actions
+- [x] Task 2：上传 JAR、测试报告和 SHA-256
+- [x] Checkpoint A：全新 CI 环境可复现构建
 
 ## Phase 2：命令级无客户端验证
 

@@ -85,15 +85,22 @@
 
 **验收标准：**
 
-- [ ] CI 使用 Java 25 和 Gradle Wrapper 执行 `clean test build`。
-- [ ] JUnit 或任一必需 GameTest 失败时工作流失败。
-- [ ] CI 上传非 sources JAR、测试报告和 SHA-256 清单。
+- [x] CI 使用 Java 25 和 Gradle Wrapper 执行 `clean test build`。
+- [x] JUnit 或任一必需 GameTest 失败时工作流失败。
+- [x] CI 上传非 sources JAR、测试报告和 SHA-256 清单。
 
 **验证：**
 
-- [ ] 正常分支 CI 全绿且产物版本为 `1.1.0-rc.1` 或当前 RC。
-- [ ] 临时破坏一个断言可证明 CI 会失败，恢复后重新通过。
-- [ ] 仓库和工作流日志中不存在密码、服务器 IP 凭据或私有配置。
+- [x] 正常分支 CI 全绿且产物版本为 `1.1.0-rc.1` 或当前 RC。
+- [x] 临时破坏一个断言可证明 CI 会失败，恢复后重新通过。
+- [x] 仓库和工作流日志中不存在密码、服务器 IP 凭据或私有配置。
+
+**证据：**
+
+- 正常运行：<https://github.com/FoxSeventeen/pearl-relay-template-26.2/actions/runs/30322852891>
+- 失败断言证明：<https://github.com/FoxSeventeen/pearl-relay-template-26.2/actions/runs/30323090685>
+- 失败证明分支在验证后已从本地和远端删除；错误断言从未进入
+  `headless-hardening`。
 
 **依赖：** Task 1 的候选标识规则
 
@@ -107,10 +114,10 @@
 
 ## Checkpoint A：可重复构建
 
-- [ ] 全新环境可以只依赖仓库和公开依赖复现构建。
-- [ ] 43 个以上 JUnit 与 15 个以上 GameTest 自动通过。
-- [ ] CI 产物 SHA-256、版本和测试报告可下载核对。
-- [ ] CI 不接触生产服或隔离测试服。
+- [x] 全新环境可以只依赖仓库和公开依赖复现构建。
+- [x] 43 个以上 JUnit 与 15 个以上 GameTest 自动通过。
+- [x] CI 产物 SHA-256、版本和测试报告可下载核对。
+- [x] CI 不接触生产服或隔离测试服。
 
 ## Task 3：增加命令级 GameTest 集成层
 
