@@ -45,7 +45,7 @@
 - [x] Task 9: Produce the headless RC test report
 - [x] Checkpoint C: Code review and RC readiness pass
 - [x] Task 10: Resolve `v1.0.0` tag provenance (unverified; do not create)
-- [ ] Task 10: Merge reviewed work from `codex/v1.1-safe-trigger`
+- [ ] Task 10: Merge reviewed work from `v1.1-safe-trigger`
 - [ ] Task 10: Create and push annotated `v1.1.0-rc.1`
 - [ ] Task 10: Publish GitHub prerelease, JAR, SHA-256, and reports
 

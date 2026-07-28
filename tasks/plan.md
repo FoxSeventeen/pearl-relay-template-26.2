@@ -4,11 +4,11 @@
 
 - Intent confirmed with the project owner on 2026-07-27.
 - Implementation and RC readiness completed on branch
-  `codex/v1.1-safe-trigger` on 2026-07-27.
+  `v1.1-safe-trigger` on 2026-07-27.
 - Java 25 clean build, 43 JUnit tests, 15 Fabric GameTests, isolated-server
   headless validation, restart validation, and code review pass.
 - The remotely tested implementation commit is
-  `e29156148d565ed2807923d6448bce62b8b1523a`; JAR SHA-256 is
+  `705cbd81a01a226c6d537031879954614d299af7`; JAR SHA-256 is
   `499ffe2023d692c1e4f2f0e47621879b4c63f3752d2292609cbf559d67c1d8a2`.
 - The existing production server remains stopped.
 - All automated live-server work used `/opt/minecraft-pearlrelay-test`.
@@ -548,7 +548,7 @@ Do not publish a tag from uncommitted or unverified sources.
 
 **Branch and commit strategy:**
 
-- Branch: `codex/v1.1-safe-trigger`
+- Branch: `v1.1-safe-trigger`
 - Keep `main` deployable.
 - Use atomic commits such as:
   1. `chore: make the Java 25 build portable`
