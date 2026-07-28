@@ -47,7 +47,7 @@
 - [x] Task 7：发布 prerelease、JAR、SHA256SUMS 和验证报告
 - [x] Task 7：只在隔离服验证配置恢复、重启和孤儿状态
 - [x] Task 7：验证结束后保持生产服和隔离服停止
-- [ ] 项目所有者审查 RC 证据并批准或拒绝稳定版
+- [x] 项目所有者审查 RC 证据并批准稳定版
 - [ ] Task 8：在最终候选提交上重跑完整自动化
 - [ ] Task 8：创建并推送 annotated `v1.2.0`
 - [ ] Task 8：发布正式 GitHub Release 并复核资产 digest
