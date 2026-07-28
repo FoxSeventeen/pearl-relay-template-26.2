@@ -2,8 +2,9 @@
 
 Pearl Relay 是一个面向 Minecraft 26.2 的 Fabric 服务端模组。玩家可以保存一个 Carpet 假人的出生位置和看向位置，然后用 `/pearlrelay fire <名称>` 安全触发珍珠滞留装置。
 
-当前版本是 `1.1.0`。它已经通过
-[自动化、隔离服务端和真实客户端端到端测试](tasks/test-results/v1.1.0.md)。
+当前候选版本是 `1.2.0-rc.1`。RC 验证状态和发布身份记录在
+[候选验证报告](tasks/test-results/v1.2.0-rc.1.md)；最新稳定版仍是
+[`1.1.0`](tasks/test-results/v1.1.0.md)。
 原 16 项机械式玩家回归已映射到自动化证据，项目所有者已批准
 [修订后的验收边界](docs/testing/v1.1.0-player-acceptance.md)。本次发布不声明
 指定整合包、代理、权限系统兼容性或主观体验承诺，因此不增加重复的真人
@@ -33,12 +34,14 @@ Windows：
 .\gradlew.bat clean test build
 ```
 
-把 `build/libs/pearlrelay-1.1.0.jar` 复制到服务端 `mods` 目录。不要部署 `-sources.jar`。
+把 `build/libs/pearlrelay-1.2.0-rc.1.jar` 复制到测试服务端 `mods` 目录。
+不要把 RC 部署到生产服，也不要部署 `-sources.jar`。
 
 ## 指令
 
 ```mcfunction
 /pearlrelay test
+/pearlrelay save <名称>
 /pearlrelay save <名称> <维度> <假人出生坐标> <看向坐标>
 /pearlrelay list
 /pearlrelay fire <名称>
@@ -51,18 +54,28 @@ Windows：
 /pearlrelay fireRaw <假人名> <维度> <假人出生坐标> <看向坐标>
 ```
 
-坐标使用 Minecraft 原生三维坐标格式，支持绝对坐标和 `~ ~ ~`。`fire`、`remove` 支持名称补全；`save`、`fireRaw` 支持维度补全。
+`save <名称>` 是推荐方式：玩家站在未来假人的出生位置、看向需要点按的
+方块后执行命令，模组会采集玩家当前维度、脚部精确位置和实际视线命中点。
+
+完整参数形式继续用于脚本和精确调试。坐标使用 Minecraft 原生三维坐标
+格式，支持绝对坐标和 `~ ~ ~`。`fire`、`remove` 支持名称补全；完整参数
+`save` 和 `fireRaw` 支持维度补全。
 
 示例：
 
 ```mcfunction
+/pearlrelay save home
 /pearlrelay save home minecraft:overworld 100.5 64 200.5 101.5 65 200.5
 /pearlrelay list
 /pearlrelay fire home
 /pearlrelay remove home
 ```
 
-`save` 会从假人眼睛位置向 `lookAt` 射线检测。出生空间、射线路径和目标区块必须已加载；出生点不能被方块阻挡；射线必须在生存模式交互距离内命中 `lookAt` 所在方块。保存成功后会记录目标方块坐标和方块类型。
+两种 `save` 都会从未来假人的标准站立眼睛位置向 `lookAt` 射线检测。
+出生空间、射线路径和目标区块必须已加载；出生点不能被方块阻挡；射线必须
+在生存模式交互距离内命中目标方块。简写保存允许执行者本人站在出生位置，
+但触发时任何玩家仍占据该位置都会被拒绝。保存成功后会记录目标方块坐标和
+方块类型。
 
 ## `fire` 的安全检查
 
@@ -92,6 +105,7 @@ spawn -> lookAt -> use once -> cleanup
 
 | 错误码 | 含义 |
 |---|---|
+| `PLAYER_REQUIRED` | 简写保存只能由游戏内玩家执行 |
 | `RELAY_NOT_FOUND` | 当前玩家没有这个中继 |
 | `RELAY_REQUIRES_RESAVE` | 旧版配置缺少目标指纹，需要用同名 `save` 重新保存 |
 | `DIMENSION_UNAVAILABLE` | 保存的维度不存在 |
@@ -107,8 +121,13 @@ spawn -> lookAt -> use once -> cleanup
 | `FAKE_PLAYER_SPAWN_TIMEOUT` | 假人未在期限内完成生成 |
 | `EXECUTION_INTERNAL_ERROR` | 执行阶段发生内部错误 |
 | `EXECUTION_CLEANUP_TIMEOUT` | 无法在期限内确认假人已退出 |
+| `CONFIG_CORRUPT` | 玩家配置损坏，且没有有效的同玩家备份 |
+| `CONFIG_RECOVERED_RETRY` | 已从同玩家备份恢复配置；本次没有执行操作，请重试 |
+| `CONFIG_RECOVERY_FAILED` | 配置恢复失败；本次没有执行操作 |
 
-立即拒绝消息以 `[错误码] Fire rejected:` 开头。接受后会返回 `execution=<UUID>`；完成或失败消息使用同一执行 ID。
+点火立即拒绝消息以 `[错误码] Fire rejected:` 开头。保存目标拒绝消息以
+`[错误码] Save rejected:` 开头。接受点火后会返回 `execution=<UUID>`；
+完成或失败消息使用同一执行 ID。
 
 ## 配置与旧版迁移
 
@@ -118,7 +137,16 @@ spawn -> lookAt -> use once -> cleanup
 config/pearlrelay/players/<player-uuid>.json
 ```
 
-`1.1` 写入 `schemaVersion: 2`，并保存目标方块坐标和注册表 ID。旧版配置不会被删除，仍可在 `/pearlrelay list` 中看到，但 `/pearlrelay fire` 会返回 `RELAY_REQUIRES_RESAVE`。站在正确装置旁重新执行同名 `save` 即可原地升级。
+`1.2` 继续写入 `schemaVersion: 2`，并保存目标方块坐标和注册表 ID，因此
+`1.1` 配置无需迁移。旧版 schema v1 配置不会被删除，仍可在
+`/pearlrelay list` 中看到，但 `/pearlrelay fire` 会返回
+`RELAY_REQUIRES_RESAVE`。站在正确装置旁、看向点火方块，重新执行同名
+`/pearlrelay save <名称>` 即可原地升级。
+
+配置保存使用同目录临时文件、刷新和原子替换；最近一次成功主文件保留为
+同玩家 `.bak`。主文件损坏且备份有效时，模组先保留 `.corrupt-N`，再恢复
+主文件并返回 `CONFIG_RECOVERED_RETRY`；玩家重试后才会继续业务动作。没有
+有效备份时不会覆盖损坏文件。
 
 ## 日志与排查
 
@@ -158,6 +186,14 @@ Java 25 运行干净构建门槛，并在 XVFB 中运行生产客户端 GameTest
 
 ## English summary
 
-Pearl Relay is a server-only Fabric mod for Minecraft 26.2. A named relay stores a Carpet fake player's spawn and look target. Before `/pearlrelay fire <name>` creates the fake player, v1.1 checks the dimension, already-loaded chunks, spawn collision, saved target block type and reachability, and at least one Ender Pearl owned by the invoking player in the target block's chunk. It never loads chunks or selects/manipulates a pearl. A valid execution performs exactly one saved `spawn -> lookAt -> use` action and then removes the fake player.
+Pearl Relay is a server-only Fabric mod for Minecraft 26.2. In v1.2, a player can
+stand where the Carpet fake player should spawn, look at the activation block, and
+run `/pearlrelay save <name>`; the mod captures the current dimension, exact feet
+position, and block hit. Before `/pearlrelay fire <name>` creates the fake player,
+it checks the dimension, already-loaded chunks, spawn collision, saved target block
+type and reachability, and at least one Ender Pearl owned by the invoking player in
+the target block's chunk. It never loads chunks or selects/manipulates a pearl. A
+valid execution performs exactly one saved `spawn -> lookAt -> use` action and then
+removes the fake player.
 
 Legacy v1 relay files remain listable but must be saved again before use. See the table above for stable failure codes and [the release acceptance boundary](docs/testing/v1.1.0-player-acceptance.md).

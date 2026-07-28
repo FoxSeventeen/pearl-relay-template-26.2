@@ -42,7 +42,7 @@
 
 ## Phase 4：RC 与发布
 
-- [ ] Task 7：更新版本、README、CHANGELOG 和迁移说明
+- [x] Task 7：更新版本、README、CHANGELOG 和迁移说明
 - [ ] Task 7：创建并推送 annotated `v1.2.0-rc.1`
 - [ ] Task 7：发布 prerelease、JAR、SHA256SUMS 和验证报告
 - [ ] Task 7：只在隔离服验证配置恢复、重启和孤儿状态
