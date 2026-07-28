@@ -3,7 +3,8 @@
 ## Status
 
 - Intent confirmed with the project owner on 2026-07-27.
-- This document is a plan only; implementation has not started.
+- Implementation started on branch `codex/v1.1-safe-trigger`.
+- Task 1 completed on 2026-07-27: Java 25 build, JUnit, and server GameTest pass.
 - The existing production server remains stopped.
 - All automated live-server work must use `/opt/minecraft-pearlrelay-test`.
 

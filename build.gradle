@@ -29,9 +29,24 @@ dependencies {
 
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
     implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+    testImplementation "net.fabricmc:fabric-loader-junit:${project.loader_version}"
 
     // Carpet 依赖，用来在代码里调用假人相关类
     implementation "maven.modrinth:carpet:${project.carpet_version}"
+}
+
+fabricApi {
+    configureTests {
+        createSourceSet = true
+        modId = "pearlrelay-gametest"
+        enableGameTests = true
+        enableClientGameTests = false
+        eula = true
+    }
+}
+
+test {
+    useJUnitPlatform()
 }
 
 processResources {

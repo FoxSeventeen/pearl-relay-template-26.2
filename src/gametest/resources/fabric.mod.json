@@ -1,0 +1,12 @@
+{
+	"schemaVersion": 1,
+	"id": "pearlrelay-gametest",
+	"version": "1.0.0",
+	"name": "Pearl Relay Game Tests",
+	"environment": "server",
+	"entrypoints": {
+		"fabric-gametest": [
+			"com.foxseventeen.pearlrelay.test.PearlRelayGameTests"
+		]
+	}
+}

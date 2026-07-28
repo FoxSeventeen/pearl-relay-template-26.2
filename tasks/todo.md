@@ -2,12 +2,12 @@
 
 ## Approval
 
-- [ ] Project owner reviews and approves `tasks/plan.md`
+- [x] Project owner reviews and approves `tasks/plan.md`
 
 ## Phase 1: Build and contract foundation
 
-- [ ] Task 1: Make the Java 25 build portable
-- [ ] Task 1: Add unit and Fabric GameTest harnesses
+- [x] Task 1: Make the Java 25 build portable
+- [x] Task 1: Add unit and Fabric GameTest harnesses
 - [ ] Task 2: Add typed preflight failure codes
 - [ ] Task 2: Add schema version and target fingerprint
 - [ ] Task 2: Preserve legacy configuration with resave guidance
