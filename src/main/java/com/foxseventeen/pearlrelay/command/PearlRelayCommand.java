@@ -6,6 +6,7 @@ import carpet.patches.EntityPlayerMPFake;
 import com.foxseventeen.pearlrelay.config.RelayConfigManager;
 import com.foxseventeen.pearlrelay.config.RelayConfigManager.RelayDefinition;
 import com.foxseventeen.pearlrelay.relay.RelayFailure;
+import com.foxseventeen.pearlrelay.relay.RelayPreflight;
 import com.foxseventeen.pearlrelay.relay.RelayTargetResolver;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
@@ -55,17 +56,14 @@ public final class PearlRelayCommand {
 	private static final DynamicCommandExceptionType RELAY_NOT_FOUND = new DynamicCommandExceptionType(
 			name -> Component.literal("Relay not found: " + name)
 	);
-	private static final DynamicCommandExceptionType RELAY_REQUIRES_RESAVE = new DynamicCommandExceptionType(
-			name -> Component.literal(
-					"[" + RelayFailure.RELAY_REQUIRES_RESAVE.code() + "] Relay '" + name
-							+ "' was saved without a target fingerprint. Save it again before firing."
-			)
-	);
 	private static final DynamicCommandExceptionType RELAY_CONFIG_ERROR = new DynamicCommandExceptionType(
 			message -> Component.literal("Relay config error: " + message)
 	);
 	private static final DynamicCommandExceptionType RELAY_SAVE_REJECTED = new DynamicCommandExceptionType(
 			failure -> Component.literal(saveFailureMessage((RelayFailure) failure))
+	);
+	private static final DynamicCommandExceptionType RELAY_FIRE_REJECTED = new DynamicCommandExceptionType(
+			failure -> Component.literal(fireFailureMessage((RelayFailure) failure))
 	);
 
 	private PearlRelayCommand() {
@@ -254,11 +252,25 @@ public final class PearlRelayCommand {
 		if (relay == null) {
 			throw RELAY_NOT_FOUND.create(name);
 		}
-		if (relay.requiresResave()) {
-			throw RELAY_REQUIRES_RESAVE.create(name);
+
+		RelayPreflight.Result preflight = RelayPreflight.check(
+				context.getSource().getServer(),
+				relay,
+				player.getUUID()
+		);
+		if (!preflight.isSuccess()) {
+			throw RELAY_FIRE_REJECTED.create(preflight.failure());
 		}
 
-		return trigger(context, relay.bot(), relay.dimension(), relay.spawn(), relay.lookAt());
+		RelayPreflight.ValidatedRelay request = preflight.request();
+		return trigger(
+				context,
+				relay.bot(),
+				request.level(),
+				relay.spawn(),
+				relay.lookAt(),
+				request.ownedPearlCount()
+		);
 	}
 
 	private static int listRelays(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
@@ -295,6 +307,17 @@ public final class PearlRelayCommand {
 
 	private static int trigger(CommandContext<CommandSourceStack> context, String bot, Identifier dimension, Vec3 spawnPos, Vec3 lookAtPos) throws CommandSyntaxException {
 		ServerLevel level = resolveDimension(context, dimension);
+		return trigger(context, bot, level, spawnPos, lookAtPos, -1);
+	}
+
+	private static int trigger(
+			CommandContext<CommandSourceStack> context,
+			String bot,
+			ServerLevel level,
+			Vec3 spawnPos,
+			Vec3 lookAtPos,
+			int ownedPearlCount
+	) throws CommandSyntaxException {
 		ResourceKey<Level> dimensionKey = level.dimension();
 		FakePlayerResult fakePlayerResult = ensureFakePlayer(context.getSource().getServer(), bot, level, spawnPos, lookAtPos);
 		if (fakePlayerResult.player() != null) {
@@ -304,9 +327,10 @@ public final class PearlRelayCommand {
 		queueUse(bot, lookAtPos);
 		queueCleanup(bot);
 
+		String pearlDetails = ownedPearlCount >= 0 ? ", ownedPearls=" + ownedPearlCount : "";
 		String message = String.format(
 				Locale.ROOT,
-				"bot=%s, fakePlayer=%s, use=queued, cleanup=queued, dimension=%s, spawn=(%.3f, %.3f, %.3f), lookAt=(%.3f, %.3f, %.3f)",
+				"bot=%s, fakePlayer=%s, use=queued, cleanup=queued, dimension=%s, spawn=(%.3f, %.3f, %.3f), lookAt=(%.3f, %.3f, %.3f)%s",
 				bot,
 				fakePlayerResult.status(),
 				dimensionKey.identifier(),
@@ -315,7 +339,8 @@ public final class PearlRelayCommand {
 				spawnPos.z,
 				lookAtPos.x,
 				lookAtPos.y,
-				lookAtPos.z
+				lookAtPos.z,
+				pearlDetails
 		);
 
 		context.getSource().sendSuccess(() -> Component.literal(message), false);
@@ -411,6 +436,21 @@ public final class PearlRelayCommand {
 			default -> "target validation failed";
 		};
 		return "[" + failure.code() + "] Cannot save relay: " + detail + ".";
+	}
+
+	private static String fireFailureMessage(RelayFailure failure) {
+		String detail = switch (failure) {
+			case RELAY_REQUIRES_RESAVE -> "this relay was saved without a target fingerprint; save it again first";
+			case DIMENSION_UNAVAILABLE -> "the saved dimension is unavailable";
+			case SPAWN_CHUNK_UNLOADED -> "the fake-player spawn chunk is not loaded";
+			case TARGET_CHUNK_UNLOADED -> "the target chunk is not loaded, so no usable pearl can be present";
+			case SPAWN_POSITION_BLOCKED -> "the fake-player spawn position is blocked";
+			case TARGET_BLOCK_CHANGED -> "the target block type no longer matches the saved relay";
+			case TARGET_UNREACHABLE -> "the saved target is no longer reachable from the fake-player spawn";
+			case OWNED_PEARL_NOT_FOUND -> "no ender pearl owned by you exists in the target block chunk";
+			default -> "the relay cannot be fired safely";
+		};
+		return "[" + failure.code() + "] Fire rejected: " + detail + ".";
 	}
 
 	private record FakePlayerResult(ServerPlayer player, String status) {

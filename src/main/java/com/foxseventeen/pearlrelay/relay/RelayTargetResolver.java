@@ -21,7 +21,7 @@ public final class RelayTargetResolver {
 
 	public static Result resolve(ServerLevel level, Vec3 spawn, Vec3 lookAt) {
 		return resolve(
-				new ServerLevelView(level),
+				worldView(level),
 				spawn,
 				lookAt,
 				new PlayerGeometry(
@@ -31,6 +31,10 @@ public final class RelayTargetResolver {
 						Player.DEFAULT_BLOCK_INTERACTION_RANGE
 				)
 		);
+	}
+
+	static WorldView worldView(ServerLevel level) {
+		return new ServerLevelView(level);
 	}
 
 	static Result resolve(WorldView world, Vec3 spawn, Vec3 lookAt) {

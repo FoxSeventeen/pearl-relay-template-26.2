@@ -302,19 +302,20 @@ chunk. Multiple owned pearls are accepted and counted.
 
 **Acceptance criteria:**
 
-- [ ] Every confirmed invalid state maps to one stable failure code.
-- [ ] Zero matching owned pearls rejects; one or multiple matching pearls pass.
-- [ ] Pearls owned by another player do not satisfy the check.
-- [ ] Preflight has no fake-player, world mutation, or chunk-loading side effect.
+- [x] Every confirmed invalid state maps to one stable failure code.
+- [x] Zero matching owned pearls rejects; one or multiple matching pearls pass.
+- [x] Pearls owned by another player do not satisfy the check.
+- [x] Preflight has no fake-player, world mutation, or chunk-loading side effect.
 
 **Verification:**
 
-- [ ] Tests cover missing dimension, unloaded spawn chunk, unloaded target
+- [x] Tests cover missing dimension, unloaded spawn chunk, unloaded target
       chunk, changed target block, unreachable target, no pearl, other-owner
       pearl, one owned pearl, and multiple owned pearls.
-- [ ] Test block-state changes of the same block type remain valid.
+- [x] Test block-state changes of the same block type remain valid.
 - [ ] Compare loaded chunks/tickets and entity counts before and after every
-      rejected case.
+      rejected case. (Pure tests assert early exit; direct server ticket
+      inspection remains in the isolated-server matrix.)
 
 **Dependencies:** Tasks 1-3
 
