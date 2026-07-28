@@ -1,7 +1,7 @@
 {
 	"schemaVersion": 1,
 	"id": "pearlrelay-gametest",
-	"version": "1.0.0",
+	"version": "${version}",
 	"name": "Pearl Relay Game Tests",
 	"environment": "server",
 	"entrypoints": {
