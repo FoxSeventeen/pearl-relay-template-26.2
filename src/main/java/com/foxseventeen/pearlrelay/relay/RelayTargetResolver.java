@@ -6,6 +6,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
@@ -35,6 +36,10 @@ public final class RelayTargetResolver {
 
 	static WorldView worldView(ServerLevel level) {
 		return new ServerLevelView(level);
+	}
+
+	static boolean isChunkReady(ChunkReadiness readiness, int chunkX, int chunkZ) {
+		return readiness.isEntityTicking(ChunkPos.pack(chunkX, chunkZ));
 	}
 
 	static Result resolve(WorldView world, Vec3 spawn, Vec3 lookAt) {
@@ -138,6 +143,11 @@ public final class RelayTargetResolver {
 		String blockId(BlockPos pos);
 	}
 
+	@FunctionalInterface
+	interface ChunkReadiness {
+		boolean isEntityTicking(long chunkPos);
+	}
+
 	public record Result(TargetFingerprint target, RelayFailure failure) {
 		static Result success(TargetFingerprint target) {
 			return new Result(target, null);
@@ -171,7 +181,10 @@ public final class RelayTargetResolver {
 	private record ServerLevelView(ServerLevel level) implements WorldView {
 		@Override
 		public boolean isChunkLoaded(int chunkX, int chunkZ) {
-			return level.getChunkSource().getChunkNow(chunkX, chunkZ) != null;
+			// getChunkNow can expose a FULL neighbor cached around a ticketed chunk even
+			// though that neighbor is not entity-ticking. Spawning there would create
+			// the very chunk activity that preflight is required to avoid.
+			return isChunkReady(level::isPositionTickingWithEntitiesLoaded, chunkX, chunkZ);
 		}
 
 		@Override

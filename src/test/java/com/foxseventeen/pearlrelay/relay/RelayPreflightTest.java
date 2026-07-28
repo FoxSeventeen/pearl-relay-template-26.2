@@ -46,7 +46,7 @@ class RelayPreflightTest {
 	@Test
 	void rejectsUnloadedSavedTargetChunkBeforeBlockRead() {
 		FakeWorld world = FakeWorld.ready();
-		world.loadedChunks.clear();
+		world.entityTickingChunks.clear();
 
 		RelayPreflight.Decision result = RelayPreflight.check(world, (owner, target) -> 1, relay(), OWNER);
 
@@ -162,7 +162,8 @@ class RelayPreflightTest {
 	}
 
 	private static final class FakeWorld implements RelayTargetResolver.WorldView {
-		private final Set<Long> loadedChunks = new HashSet<>();
+		private final Set<Long> fullChunks = new HashSet<>();
+		private final Set<Long> entityTickingChunks = new HashSet<>();
 		private boolean spawnClear = true;
 		private String blockId = "minecraft:note_block";
 		private int readCount;
@@ -172,14 +173,16 @@ class RelayPreflightTest {
 
 		private static FakeWorld ready() {
 			FakeWorld world = new FakeWorld();
-			world.loadedChunks.add(chunkKey(0, 0));
+			world.fullChunks.add(chunkKey(0, 0));
+			world.entityTickingChunks.add(chunkKey(0, 0));
 			return world;
 		}
 
 		@Override
 		public boolean isChunkLoaded(int chunkX, int chunkZ) {
 			readCount++;
-			return loadedChunks.contains(chunkKey(chunkX, chunkZ));
+			long chunkKey = chunkKey(chunkX, chunkZ);
+			return fullChunks.contains(chunkKey) && entityTickingChunks.contains(chunkKey);
 		}
 
 		@Override

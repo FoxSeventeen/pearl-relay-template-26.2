@@ -3,6 +3,7 @@ package com.foxseventeen.pearlrelay.relay;
 import com.foxseventeen.pearlrelay.config.RelayConfigManager.TargetFingerprint;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -36,13 +37,42 @@ class RelayTargetResolverTest {
 	@Test
 	void rejectsUnloadedSpawnChunkBeforeReadingWorld() {
 		FakeWorld world = FakeWorld.ready();
-		world.loadedChunks.clear();
+		world.entityTickingChunks.clear();
 
 		RelayTargetResolver.Result result = RelayTargetResolver.resolve(world, SPAWN, LOOK_AT);
 
 		assertEquals(RelayFailure.SPAWN_CHUNK_UNLOADED, result.failure());
 		assertEquals(0, world.clipCalls);
 		assertFalse(world.spawnClearChecked);
+	}
+
+	@Test
+	void rejectsFullButNonTickingNeighborChunk() {
+		FakeWorld world = FakeWorld.ready();
+		world.entityTickingChunks.clear();
+
+		assertTrue(world.fullChunks.contains(ChunkPos.pack(0, 0)));
+		RelayTargetResolver.Result result = RelayTargetResolver.resolve(world, SPAWN, LOOK_AT);
+
+		assertEquals(RelayFailure.SPAWN_CHUNK_UNLOADED, result.failure());
+		assertEquals(0, world.clipCalls);
+	}
+
+	@Test
+	void serverChunkReadinessUsesEntityTickingState() {
+		long[] checkedChunk = {Long.MIN_VALUE};
+
+		boolean ready = RelayTargetResolver.isChunkReady(
+				chunkPos -> {
+					checkedChunk[0] = chunkPos;
+					return false;
+				},
+				100,
+				-7
+		);
+
+		assertFalse(ready);
+		assertEquals(ChunkPos.pack(100, -7), checkedChunk[0]);
 	}
 
 	@Test
@@ -106,7 +136,8 @@ class RelayTargetResolverTest {
 	}
 
 	private static final class FakeWorld implements RelayTargetResolver.WorldView {
-		private final Set<Long> loadedChunks = new HashSet<>();
+		private final Set<Long> fullChunks = new HashSet<>();
+		private final Set<Long> entityTickingChunks = new HashSet<>();
 		private boolean spawnClear = true;
 		private boolean spawnClearChecked;
 		private int clipCalls;
@@ -114,13 +145,15 @@ class RelayTargetResolverTest {
 
 		private static FakeWorld ready() {
 			FakeWorld world = new FakeWorld();
-			world.loadedChunks.add(chunkKey(0, 0));
+			world.fullChunks.add(chunkKey(0, 0));
+			world.entityTickingChunks.add(chunkKey(0, 0));
 			return world;
 		}
 
 		@Override
 		public boolean isChunkLoaded(int chunkX, int chunkZ) {
-			return loadedChunks.contains(chunkKey(chunkX, chunkZ));
+			long chunkKey = chunkKey(chunkX, chunkZ);
+			return fullChunks.contains(chunkKey) && entityTickingChunks.contains(chunkKey);
 		}
 
 		@Override

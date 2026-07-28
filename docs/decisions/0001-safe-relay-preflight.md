@@ -18,7 +18,7 @@ Minecraft 26.2 Ender Pearls keep their relevant chunk active. For this project, 
 
 - Preserve `spawn` and `lookAt` as activation data only.
 - On save, raycast from the fake player's eye position and persist the hit block position plus block registry ID.
-- On named fire, use non-loading chunk lookups and reject if any relevant chunk is unavailable.
+- On named fire, use non-loading entity-ticking checks and reject if any relevant chunk is unavailable. A FULL neighbor cached around another ticket is not considered ready.
 - Require at least one Ender Pearl owned by the invoking player in the target block's exact chunk.
 - Treat pearl count as a boolean readiness condition; never select, move, release, or otherwise control a pearl.
 - Fingerprint block type but not mutable block-state properties.
