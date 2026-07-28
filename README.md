@@ -138,6 +138,11 @@ grep 'event=relay_fire' logs/latest.log
 
 Fabric GameTest 会验证目标解析、珍珠所有权、方块类型/状态、单次右键和假人清理。隔离服务器和玩家验收结果记录在 `tasks/test-results/` 与 `docs/testing/`。
 
+GitHub Actions 会在每次 push 和 pull request 中使用 Java 25 运行同一条
+`./gradlew --no-daemon clean test build` 质量门，并上传非 sources JAR、
+SHA-256 清单、JUnit 报告和 GameTest 日志。该工作流只读取仓库和公开依赖，
+不会连接生产服或隔离测试服，也不包含服务器凭据。
+
 ## English summary
 
 Pearl Relay is a server-only Fabric mod for Minecraft 26.2. A named relay stores a Carpet fake player's spawn and look target. Before `/pearlrelay fire <name>` creates the fake player, v1.1 checks the dimension, already-loaded chunks, spawn collision, saved target block type and reachability, and at least one Ender Pearl owned by the invoking player in the target block's chunk. It never loads chunks or selects/manipulates a pearl. A valid execution performs exactly one saved `spawn -> lookAt -> use` action and then removes the fake player.
