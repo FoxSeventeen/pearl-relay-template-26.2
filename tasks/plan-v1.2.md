@@ -2,7 +2,7 @@
 
 ## 状态
 
-- 计划状态：项目所有者已批准 RC；Tasks 1–7 完成，正在执行 Task 8
+- 计划状态：Tasks 1–8 完成；v1.2.0 已正式发布，生产部署未获授权
 - 功能意图：项目所有者已于 2026-07-28 确认
 - 版本目标：`1.2.0`
 - 规划分支：`v1.2-planning`
@@ -374,15 +374,15 @@ Release；只有用户明确授权时才部署生产服务器。
 
 **验收标准：**
 
-- [ ] 最终候选提交的普通构建和生产 JAR 客户端 GitHub Actions 均绿色。
-- [ ] annotated `v1.2.0` tag、正式 Release、JAR 和 SHA-256 完全一致。
-- [ ] 生产部署前保留 v1.1.0 回滚副本，部署后按用户要求保持启动或停止。
+- [x] 最终候选提交的普通构建和生产 JAR 客户端 GitHub Actions 均绿色。
+- [x] annotated `v1.2.0` tag、正式 Release、JAR 和 SHA-256 完全一致。
+- [x] 未获生产部署授权；生产服保持停止并继续保留 v1.1.0。
 
 **验证：**
 
-- [ ] Release 为非 draft、非 prerelease，并包含 JAR、SHA256SUMS 和报告。
-- [ ] GitHub asset digest、下载文件、部署文件和报告哈希一致。
-- [ ] 最终 Git 状态、远端 tag、服务器状态和回滚路径形成发布记录。
+- [x] Release 为非 draft、非 prerelease，并包含 JAR、SHA256SUMS 和报告。
+- [x] GitHub asset digest、下载文件和报告哈希一致。
+- [x] 最终 Git 状态、远端 tag、服务器停机状态和回滚路径形成发布记录。
 
 **依赖：** Task 7、项目所有者批准
 
