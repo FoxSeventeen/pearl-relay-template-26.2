@@ -11,16 +11,37 @@ public final class RelayExecutionManager {
 
 	private final Runtime runtime;
 	private final Timings timings;
+	private final Consumer<AcceptedResult> acceptedListener;
 	private final Consumer<TerminalResult> terminalListener;
 	private final Map<String, Execution> activeByBot = new LinkedHashMap<>();
 
 	public RelayExecutionManager(Runtime runtime, Consumer<TerminalResult> terminalListener) {
-		this(runtime, DEFAULT_TIMINGS, terminalListener);
+		this(runtime, DEFAULT_TIMINGS, accepted -> {
+		}, terminalListener);
+	}
+
+	public RelayExecutionManager(
+			Runtime runtime,
+			Consumer<AcceptedResult> acceptedListener,
+			Consumer<TerminalResult> terminalListener
+	) {
+		this(runtime, DEFAULT_TIMINGS, acceptedListener, terminalListener);
 	}
 
 	public RelayExecutionManager(Runtime runtime, Timings timings, Consumer<TerminalResult> terminalListener) {
+		this(runtime, timings, accepted -> {
+		}, terminalListener);
+	}
+
+	public RelayExecutionManager(
+			Runtime runtime,
+			Timings timings,
+			Consumer<AcceptedResult> acceptedListener,
+			Consumer<TerminalResult> terminalListener
+	) {
 		this.runtime = runtime;
 		this.timings = timings;
+		this.acceptedListener = acceptedListener;
 		this.terminalListener = terminalListener;
 	}
 
@@ -40,8 +61,9 @@ public final class RelayExecutionManager {
 			return StartResult.rejected(nameFailure);
 		}
 
-		Execution execution = new Execution(UUID.randomUUID(), request);
+		Execution execution = new Execution(request.executionId(), request);
 		activeByBot.put(bot, execution);
+		notifyAccepted(new AcceptedResult(execution.id, request));
 		try {
 			SpawnStatus spawnStatus = runtime.spawn(request);
 			switch (spawnStatus) {
@@ -84,6 +106,7 @@ public final class RelayExecutionManager {
 	}
 
 	private void tick(Execution execution) {
+		execution.durationTicks++;
 		try {
 			switch (execution.phase) {
 				case WAITING_FOR_FAKE_PLAYER -> tickWaiting(execution);
@@ -177,12 +200,29 @@ public final class RelayExecutionManager {
 
 	private void terminate(Execution execution, RelayFailure failure) {
 		if (activeByBot.remove(execution.bot(), execution)) {
-			terminalListener.accept(new TerminalResult(
+			notifyTerminal(new TerminalResult(
 					execution.id,
 					execution.request,
 					failure == null,
-					failure
+					failure,
+					execution.durationTicks
 			));
+		}
+	}
+
+	private void notifyAccepted(AcceptedResult result) {
+		try {
+			acceptedListener.accept(result);
+		} catch (RuntimeException ignored) {
+			// Telemetry and notification failures must not change relay execution.
+		}
+	}
+
+	private void notifyTerminal(TerminalResult result) {
+		try {
+			terminalListener.accept(result);
+		} catch (RuntimeException ignored) {
+			// Telemetry and notification failures must not change relay execution.
 		}
 	}
 
@@ -229,6 +269,7 @@ public final class RelayExecutionManager {
 	}
 
 	public record ExecutionRequest(
+			UUID executionId,
 			String relayName,
 			UUID ownerId,
 			RelayPreflight.ValidatedRelay validated
@@ -253,7 +294,14 @@ public final class RelayExecutionManager {
 			UUID executionId,
 			ExecutionRequest request,
 			boolean success,
-			RelayFailure failure
+			RelayFailure failure,
+			int durationTicks
+	) {
+	}
+
+	public record AcceptedResult(
+			UUID executionId,
+			ExecutionRequest request
 	) {
 	}
 
@@ -262,6 +310,7 @@ public final class RelayExecutionManager {
 		private final ExecutionRequest request;
 		private Phase phase = Phase.WAITING_FOR_FAKE_PLAYER;
 		private int phaseTicks;
+		private int durationTicks;
 		private RelayFailure failure;
 
 		private Execution(UUID id, ExecutionRequest request) {

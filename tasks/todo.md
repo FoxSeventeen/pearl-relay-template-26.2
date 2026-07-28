@@ -28,8 +28,8 @@
 
 ## Phase 3: Observability and remote validation
 
-- [ ] Task 7: Add structured accepted/rejected/terminal logs
-- [ ] Task 7: Add exact player-facing failures
+- [x] Task 7: Add structured accepted/rejected/terminal logs
+- [x] Task 7: Add exact player-facing failures
 - [ ] Task 8: Build and checksum the candidate JAR
 - [ ] Task 8: Back up the previous isolated-test JAR
 - [ ] Task 8: Deploy only to `/opt/minecraft-pearlrelay-test`

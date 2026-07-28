@@ -1,8 +1,10 @@
 package com.foxseventeen.pearlrelay.test;
 
+import com.foxseventeen.pearlrelay.PearlRelayMod;
 import com.foxseventeen.pearlrelay.config.RelayConfigManager.RelayDefinition;
 import com.foxseventeen.pearlrelay.config.RelayConfigManager.TargetFingerprint;
 import com.foxseventeen.pearlrelay.relay.CarpetRelayRuntime;
+import com.foxseventeen.pearlrelay.relay.RelayEventReporter;
 import com.foxseventeen.pearlrelay.relay.RelayExecutionManager;
 import com.foxseventeen.pearlrelay.relay.RelayFailure;
 import com.foxseventeen.pearlrelay.relay.RelayPreflight;
@@ -179,14 +181,20 @@ public final class PearlRelayGameTests implements CustomTestMethodInvoker {
 		RelayPreflight.ValidatedRelay validated =
 				new RelayPreflight.ValidatedRelay(context.getLevel(), relay, 1);
 		List<RelayExecutionManager.TerminalResult> terminals = new ArrayList<>();
+		RelayEventReporter reporter = new RelayEventReporter(PearlRelayMod.LOGGER);
 		RelayExecutionManager manager = new RelayExecutionManager(
 				new CarpetRelayRuntime(),
 				new RelayExecutionManager.Timings(40, 2, 8, 10),
-				terminals::add
+				reporter::accepted,
+				terminal -> {
+					reporter.terminal(terminal);
+					terminals.add(terminal);
+				}
 		);
 
 		RelayExecutionManager.StartResult start = manager.start(
 				new RelayExecutionManager.ExecutionRequest(
+						java.util.UUID.randomUUID(),
 						"gametest",
 						context.makeMockServerPlayer(GameType.SURVIVAL).getUUID(),
 						validated

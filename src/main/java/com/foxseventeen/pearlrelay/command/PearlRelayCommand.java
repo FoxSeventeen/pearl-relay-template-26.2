@@ -1,12 +1,15 @@
 package com.foxseventeen.pearlrelay.command;
 
+import com.foxseventeen.pearlrelay.PearlRelayMod;
 import com.foxseventeen.pearlrelay.config.RelayConfigManager;
 import com.foxseventeen.pearlrelay.config.RelayConfigManager.RelayDefinition;
 import com.foxseventeen.pearlrelay.relay.CarpetRelayRuntime;
+import com.foxseventeen.pearlrelay.relay.RelayEventReporter;
 import com.foxseventeen.pearlrelay.relay.RelayExecutionManager;
 import com.foxseventeen.pearlrelay.relay.RelayExecutionManager.ExecutionRequest;
 import com.foxseventeen.pearlrelay.relay.RelayExecutionManager.StartResult;
 import com.foxseventeen.pearlrelay.relay.RelayFailure;
+import com.foxseventeen.pearlrelay.relay.RelayMessages;
 import com.foxseventeen.pearlrelay.relay.RelayPreflight;
 import com.foxseventeen.pearlrelay.relay.RelayTargetResolver;
 import com.mojang.brigadier.Command;
@@ -39,14 +42,14 @@ import java.util.concurrent.CompletableFuture;
 
 public final class PearlRelayCommand {
 	private static final UUID CONSOLE_OWNER = new UUID(0L, 0L);
+	private static final RelayEventReporter REPORTER = new RelayEventReporter(PearlRelayMod.LOGGER);
 	private static final RelayExecutionManager EXECUTIONS =
-			new RelayExecutionManager(new CarpetRelayRuntime(), terminal -> {
-			});
+			new RelayExecutionManager(new CarpetRelayRuntime(), REPORTER::accepted, REPORTER::terminal);
 	private static final DynamicCommandExceptionType INVALID_DIMENSION = new DynamicCommandExceptionType(
 			dimension -> Component.literal("Unknown or unloaded dimension: " + dimension)
 	);
 	private static final DynamicCommandExceptionType RELAY_NOT_FOUND = new DynamicCommandExceptionType(
-			name -> Component.literal("Relay not found: " + name)
+			name -> RelayMessages.relayNotFound(name.toString())
 	);
 	private static final DynamicCommandExceptionType RELAY_CONFIG_ERROR = new DynamicCommandExceptionType(
 			message -> Component.literal("Relay config error: " + message)
@@ -55,7 +58,7 @@ public final class PearlRelayCommand {
 			failure -> Component.literal(saveFailureMessage((RelayFailure) failure))
 	);
 	private static final DynamicCommandExceptionType RELAY_FIRE_REJECTED = new DynamicCommandExceptionType(
-			failure -> Component.literal(fireFailureMessage((RelayFailure) failure))
+			failure -> RelayMessages.fireFailure((RelayFailure) failure)
 	);
 
 	private PearlRelayCommand() {
@@ -127,6 +130,7 @@ public final class PearlRelayCommand {
 	}
 
 	private static int fireRaw(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+		UUID executionId = UUID.randomUUID();
 		String bot = StringArgumentType.getString(context, "bot");
 		Identifier dimension = IdentifierArgument.getId(context, "dimension");
 		Vec3 spawnPos = Vec3Argument.getVec3(context, "spawn");
@@ -134,6 +138,7 @@ public final class PearlRelayCommand {
 		ServerLevel level = resolveDimension(context, dimension);
 		RelayTargetResolver.Result target = RelayTargetResolver.resolve(level, spawnPos, lookAtPos);
 		if (!target.isSuccess()) {
+			REPORTER.rejected(executionId, "<raw>", CONSOLE_OWNER, null, -1, target.failure());
 			throw RELAY_FIRE_REJECTED.create(target.failure());
 		}
 
@@ -142,6 +147,7 @@ public final class PearlRelayCommand {
 		RelayPreflight.ValidatedRelay validated = new RelayPreflight.ValidatedRelay(level, relay, -1);
 		return startExecution(
 				context,
+				executionId,
 				"<raw>",
 				player == null ? CONSOLE_OWNER : player.getUUID(),
 				validated
@@ -187,16 +193,33 @@ public final class PearlRelayCommand {
 	}
 
 	private static int fireRelay(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+		UUID executionId = UUID.randomUUID();
 		String name = StringArgumentType.getString(context, "name");
 		ServerPlayer player = context.getSource().getPlayerOrException();
 		RelayDefinition relay;
 		try {
 			relay = RelayConfigManager.get(player.getUUID(), name);
 		} catch (IOException exception) {
+			REPORTER.rejected(
+					executionId,
+					name,
+					player.getUUID(),
+					null,
+					0,
+					RelayFailure.EXECUTION_INTERNAL_ERROR
+			);
 			throw RELAY_CONFIG_ERROR.create(exception.getMessage());
 		}
 
 		if (relay == null) {
+			REPORTER.rejected(
+					executionId,
+					name,
+					player.getUUID(),
+					null,
+					0,
+					RelayFailure.RELAY_NOT_FOUND
+			);
 			throw RELAY_NOT_FOUND.create(name);
 		}
 
@@ -206,11 +229,19 @@ public final class PearlRelayCommand {
 				player.getUUID()
 		);
 		if (!preflight.isSuccess()) {
+			REPORTER.rejected(
+					executionId,
+					name,
+					player.getUUID(),
+					relay,
+					0,
+					preflight.failure()
+			);
 			throw RELAY_FIRE_REJECTED.create(preflight.failure());
 		}
 
 		RelayPreflight.ValidatedRelay request = preflight.request();
-		return startExecution(context, name, player.getUUID(), request);
+		return startExecution(context, executionId, name, player.getUUID(), request);
 	}
 
 	private static int listRelays(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
@@ -247,12 +278,21 @@ public final class PearlRelayCommand {
 
 	private static int startExecution(
 			CommandContext<CommandSourceStack> context,
+			UUID executionId,
 			String relayName,
 			UUID ownerId,
 			RelayPreflight.ValidatedRelay validated
 	) throws CommandSyntaxException {
-		StartResult result = EXECUTIONS.start(new ExecutionRequest(relayName, ownerId, validated));
+		StartResult result = EXECUTIONS.start(new ExecutionRequest(executionId, relayName, ownerId, validated));
 		if (!result.isAccepted()) {
+			REPORTER.rejected(
+					executionId,
+					relayName,
+					ownerId,
+					validated.relay(),
+					validated.ownedPearlCount(),
+					result.failure()
+			);
 			throw RELAY_FIRE_REJECTED.create(result.failure());
 		}
 
@@ -289,24 +329,4 @@ public final class PearlRelayCommand {
 		return "[" + failure.code() + "] Cannot save relay: " + detail + ".";
 	}
 
-	private static String fireFailureMessage(RelayFailure failure) {
-		String detail = switch (failure) {
-			case RELAY_REQUIRES_RESAVE -> "this relay was saved without a target fingerprint; save it again first";
-			case DIMENSION_UNAVAILABLE -> "the saved dimension is unavailable";
-			case SPAWN_CHUNK_UNLOADED -> "the fake-player spawn chunk is not loaded";
-			case TARGET_CHUNK_UNLOADED -> "the target chunk is not loaded, so no usable pearl can be present";
-			case SPAWN_POSITION_BLOCKED -> "the fake-player spawn position is blocked";
-			case TARGET_BLOCK_CHANGED -> "the target block type no longer matches the saved relay";
-			case TARGET_UNREACHABLE -> "the saved target is no longer reachable from the fake-player spawn";
-			case OWNED_PEARL_NOT_FOUND -> "no ender pearl owned by you exists in the target block chunk";
-			case EXECUTION_ALREADY_ACTIVE -> "an execution for this relay bot is already active";
-			case FAKE_PLAYER_NAME_IN_USE -> "the generated fake-player name is already in use";
-			case FAKE_PLAYER_CREATE_FAILED -> "Carpet could not create the fake player";
-			case FAKE_PLAYER_SPAWN_TIMEOUT -> "the fake player did not finish spawning before the deadline";
-			case EXECUTION_INTERNAL_ERROR -> "an internal execution step failed";
-			case EXECUTION_CLEANUP_TIMEOUT -> "the fake player could not be confirmed removed before the deadline";
-			default -> "the relay cannot be fired safely";
-		};
-		return "[" + failure.code() + "] Fire rejected: " + detail + ".";
-	}
 }

@@ -2,6 +2,7 @@ package com.foxseventeen.pearlrelay.relay;
 
 import com.foxseventeen.pearlrelay.config.RelayConfigManager.RelayDefinition;
 import com.foxseventeen.pearlrelay.config.RelayConfigManager.TargetFingerprint;
+import com.foxseventeen.pearlrelay.relay.RelayExecutionManager.AcceptedResult;
 import com.foxseventeen.pearlrelay.relay.RelayExecutionManager.ExecutionRequest;
 import com.foxseventeen.pearlrelay.relay.RelayExecutionManager.SpawnStatus;
 import com.foxseventeen.pearlrelay.relay.RelayExecutionManager.StartResult;
@@ -23,16 +24,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RelayExecutionManagerTest {
 	private FakeRuntime runtime;
+	private List<AcceptedResult> accepted;
 	private List<TerminalResult> terminals;
 	private RelayExecutionManager manager;
 
 	@BeforeEach
 	void setUp() {
 		runtime = new FakeRuntime();
+		accepted = new ArrayList<>();
 		terminals = new ArrayList<>();
 		manager = new RelayExecutionManager(
 				runtime,
 				new RelayExecutionManager.Timings(3, 2, 2, 3),
+				accepted::add,
 				terminals::add
 		);
 	}
@@ -68,6 +72,7 @@ class RelayExecutionManagerTest {
 
 		assertTrue(start.isAccepted());
 		assertEquals(1, runtime.useCalls);
+		assertEquals(1, accepted.size());
 		assertEquals(1, terminals.size());
 		assertTrue(terminals.getFirst().success());
 	}
@@ -119,6 +124,7 @@ class RelayExecutionManagerTest {
 		assertFalse(second.isAccepted());
 		assertEquals(RelayFailure.EXECUTION_ALREADY_ACTIVE, second.failure());
 		assertEquals(1, runtime.spawnCalls);
+		assertEquals(1, accepted.size());
 		assertEquals(1, manager.activeCount());
 	}
 
@@ -217,6 +223,7 @@ class RelayExecutionManagerTest {
 				new TargetFingerprint(8, 65, 12, "minecraft:note_block")
 		);
 		return new ExecutionRequest(
+				UUID.randomUUID(),
 				relayName,
 				UUID.fromString("11111111-2222-3333-4444-555555555555"),
 				new RelayPreflight.ValidatedRelay(null, relay, 1)

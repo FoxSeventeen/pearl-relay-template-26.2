@@ -413,16 +413,16 @@ message and an asynchronous terminal completion/failure message when possible.
 
 **Acceptance criteria:**
 
-- [ ] Logs include execution ID, relay, player UUID, dimension, target chunk,
+- [x] Logs include execution ID, relay, player UUID, dimension, target chunk,
       pearl count, phase, result, failure code, and duration where applicable.
-- [ ] Rejection messages state the exact correctable cause.
-- [ ] No credential, password, entire config file, or unrelated player data is
+- [x] Rejection messages state the exact correctable cause.
+- [x] No credential, password, entire config file, or unrelated player data is
       logged.
 
 **Verification:**
 
-- [ ] Log-capture tests assert fields and one terminal event per execution.
-- [ ] Error-message tests cover every stable failure code.
+- [x] Log-capture tests assert fields and one terminal event per execution.
+- [x] Error-message tests cover every stable failure code.
 - [ ] Manual log review confirms successful and rejected examples are searchable
       with `grep 'event=relay_fire'`.
 
