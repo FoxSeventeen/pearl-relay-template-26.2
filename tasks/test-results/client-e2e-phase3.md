@@ -1,14 +1,11 @@
-# 客户端 E2E 阶段 3 本地结果
+# 客户端 E2E 阶段 3 结果
 
 ## 结论
 
-2026-07-28，Task 5 和 Task 6 的本地实现、故障实验及回归通过。客户端测试
-现在能证明假玩家的可见生命周期，并且新增生产客户端任务会从发布 JAR
-加载主代码。
-
-Checkpoint C 尚未最终关闭：工作区修改仍未提交或推送，因此还没有同一
-`GITHUB_SHA` 下的首次绿色 GitHub Actions 运行和可下载产物。工作流已经
-具备该门槛，提交后的第一次绿色运行是剩余验证项。
+2026-07-28，Task 5、Task 6 和 Checkpoint C 通过。客户端测试能证明假
+玩家的可见生命周期，生产客户端任务从发布 JAR 加载主代码，并且首次
+GitHub Actions 生产客户端工作流已在提交
+`d749d64e998f593e4e9f3f08bfe5880e3e694ce1` 上绿色完成。
 
 ## 环境
 
@@ -146,14 +143,31 @@ GameTest、生产运行任务和 XVFB 用法依据官方文档：
 - https://docs.fabricmc.net/develop/automatic-testing
 - https://docs.fabricmc.net/develop/loom/production-run-tasks
 
-## 剩余门槛
+## GitHub Actions 实际结果
 
-在这些修改被审查、提交并推送后，需要观察一次真实的
-`Java 25 production client GameTest` 绿色作业，并下载核对：
+工作流：
+https://github.com/FoxSeventeen/pearl-relay-template-26.2/actions/runs/30335238993
 
-1. `production-client-candidate-<commit>`
-2. `production-client-evidence-<commit>`
-3. 两个产物中的提交 SHA 与 SHA-256 是否一致
+- `Java 25 build and tests`：绿色，耗时 1 分 30 秒；
+- `Java 25 production client GameTest`：绿色，耗时 5 分 47 秒；
+- 生产客户端测试自身耗时 4 分 40 秒；
+- JAR 来源、Fabric API 版本、测试代码隔离和测试后哈希校验全部通过；
+- 候选产物和证据产物均可下载，保留 14 天；
+- 证据产物包含 `latest.log`、5 张 `1280×720` 截图、`COMMIT_SHA`、
+  `RELEASE_JAR` 和 `SHA256SUMS`。
 
-完成后才能勾选 Checkpoint C 的“全部证据可下载并关联到同一提交/JAR
-哈希”，然后进入阶段 4 的人工验收边界重写。
+下载后复核：
+
+- 两份 `COMMIT_SHA` 都是
+  `d749d64e998f593e4e9f3f08bfe5880e3e694ce1`；
+- 普通构建发布 JAR、生产客户端候选 JAR、候选校验文件和证据校验文件
+  的 SHA-256 均为
+  `dd308aa436285e670b88319290c47814da03577298ae2b0dd108806536d595e2`；
+- CI 中被测试、校验和上传的是同一个 JAR 文件。
+
+本地 macOS 构建的 JAR 哈希不同，是 Gradle JAR 中构建时间元数据造成的
+跨环境差异；Checkpoint C 关联的是同一 CI 作业内实际被测试并上传的候选
+文件，不依赖跨机器可重现哈希。
+
+Checkpoint C 已关闭。下一步是阶段 4：把原 16 项玩家验收逐项映射到自动化
+证据，只保留主观体验和指定整合环境兼容性的探索性检查。
