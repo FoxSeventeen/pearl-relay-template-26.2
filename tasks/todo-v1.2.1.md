@@ -29,10 +29,10 @@
 - [x] 合入 `main`
 - [x] 创建 annotated `v1.2.1` tag
 - [x] 创建正式 GitHub Release、JAR 和 `SHA256SUMS`
-- [ ] 停服前确认在线玩家并执行 `save-all flush`
-- [ ] 备份当前生产 JAR 和四份配置证据
-- [ ] 部署与 Release 资产字节一致的 v1.2.1 JAR
-- [ ] 验证启动、端口、版本、命令、配置读取和无新增异常
+- [x] 停服前确认在线玩家并执行 `save-all flush`
+- [x] 备份当前生产 JAR 和四份配置证据
+- [x] 部署与 Release 资产字节一致的 v1.2.1 JAR
+- [x] 验证启动、端口、版本、命令、配置不变和无新增异常
 
 ## 数据边界
 
