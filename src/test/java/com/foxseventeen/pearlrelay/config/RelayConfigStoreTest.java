@@ -188,6 +188,42 @@ class RelayConfigStoreTest {
 	}
 
 	@Test
+	void rejectsPresentInvalidTargetInAMixedConfig() throws Exception {
+		Files.writeString(playersDir.resolve(PLAYER_ID + ".json"), """
+				{
+				  "schemaVersion": 2,
+				  "playerName": "PlayerOne",
+				  "relays": {
+				    "legacy": {
+				      "bot": "pr_11111111_old",
+				      "dimension": {"namespace": "minecraft", "path": "overworld"},
+				      "spawn": {"x": 10.5, "y": 64.0, "z": 18.5},
+				      "lookAt": {"x": 10.5, "y": 64.5, "z": 20.5}
+				    },
+				    "broken": {
+				      "bot": "pr_11111111_bad",
+				      "dimension": {"namespace": "minecraft", "path": "overworld"},
+				      "spawn": {"x": 20.5, "y": 64.0, "z": 18.5},
+				      "lookAt": {"x": 20.5, "y": 64.5, "z": 20.5},
+				      "target": {
+				        "x": 20,
+				        "y": 64,
+				        "z": 20,
+				        "blockId": "bad id"
+				      }
+				    }
+				  }
+				}
+				""");
+		RelayConfigStore store = new RelayConfigStore(playersDir);
+
+		RelayConfigException exception =
+				assertThrows(RelayConfigException.class, () -> store.names(PLAYER_ID));
+
+		assertEquals(RelayConfigException.Code.CONFIG_CORRUPT, exception.code());
+	}
+
+	@Test
 	void restoresAValidSamePlayerBackupAndRequiresTheCommandToRetry() throws Exception {
 		RelayConfigStore store = new RelayConfigStore(playersDir);
 		RelayConfigManager.TargetFingerprint previousTarget =
