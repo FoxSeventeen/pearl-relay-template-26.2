@@ -111,20 +111,16 @@ final class RelayConfigStore {
 			throw new InvalidConfigException();
 		}
 
-		boolean targetRequired = file.schemaVersion == CURRENT_SCHEMA_VERSION;
 		for (Map.Entry<String, RelayConfigManager.RelayDefinition> entry : file.relays.entrySet()) {
 			if (entry.getKey() == null
 					|| entry.getKey().isBlank()
-					|| !isValid(entry.getValue(), targetRequired)) {
+					|| !isValid(entry.getValue())) {
 				throw new InvalidConfigException();
 			}
 		}
 	}
 
-	private static boolean isValid(
-			RelayConfigManager.RelayDefinition relay,
-			boolean targetRequired
-	) {
+	private static boolean isValid(RelayConfigManager.RelayDefinition relay) {
 		if (relay == null
 				|| relay.bot() == null
 				|| relay.bot().isBlank()
@@ -134,9 +130,8 @@ final class RelayConfigStore {
 				|| !isFinite(relay.lookAt())) {
 			return false;
 		}
-		return targetRequired
-				? relay.target() != null && relay.target().isValid()
-				: relay.target() == null || relay.target().isValid();
+		// A player may upgrade legacy relays one at a time, leaving a mixed schema-v2 file.
+		return relay.target() == null || relay.target().isValid();
 	}
 
 	private static boolean isFinite(Vec3 position) {

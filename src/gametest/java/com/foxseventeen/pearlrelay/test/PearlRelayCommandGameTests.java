@@ -1,6 +1,7 @@
 package com.foxseventeen.pearlrelay.test;
 
 import com.foxseventeen.pearlrelay.config.RelayConfigManager;
+import com.google.gson.GsonBuilder;
 import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -41,8 +42,10 @@ import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -450,6 +453,73 @@ public final class PearlRelayCommandGameTests implements CustomTestMethodInvoker
 	}
 
 	@GameTest
+	public void snapshotSaveAndIncrementalResaveKeepMultipleLegacyRelaysReadable(
+			GameTestHelper context
+	) throws Exception {
+		prepareDevice(context);
+		CapturingPlayer owner = createPlayer(
+				context,
+				"legacy_multi",
+				new Vec3(0.5D, 0.0D, 0.5D)
+		);
+		String firstLegacy = uniqueRelay("old_a_");
+		String secondLegacy = uniqueRelay("old_b_");
+		String newRelay = uniqueRelay("new_");
+		Path config = playerConfig(owner.getUUID());
+		Path backup = config.resolveSibling(config.getFileName() + ".bak");
+		Path corrupt = config.resolveSibling(config.getFileName() + ".corrupt-1");
+
+		try {
+			writeLegacyConfig(context, owner, firstLegacy, secondLegacy);
+			owner.lookAt(
+					EntityAnchorArgument.Anchor.EYES,
+					context.absoluteVec(Vec3.atCenterOf(TARGET))
+			);
+
+			assertCommandSucceeded(context, "pearlrelay save " + newRelay, owner);
+			execute(owner, "pearlrelay list");
+			context.assertTrue(owner.hasMessageContaining(firstLegacy), "first legacy relay remains listed");
+			context.assertTrue(owner.hasMessageContaining(secondLegacy), "second legacy relay remains listed");
+			context.assertTrue(owner.hasMessageContaining(newRelay), "new relay is listed");
+			context.assertTrue(
+					RelayConfigManager.get(owner.getUUID(), firstLegacy).requiresResave(),
+					"first legacy relay still requires resave"
+			);
+			context.assertFalse(
+					RelayConfigManager.get(owner.getUUID(), newRelay).requiresResave(),
+					"new relay has a target fingerprint"
+			);
+
+			assertCommandSucceeded(context, "pearlrelay save " + firstLegacy, owner);
+			execute(owner, "pearlrelay list");
+			context.assertTrue(owner.hasMessageContaining(firstLegacy), "upgraded relay remains listed");
+			context.assertTrue(owner.hasMessageContaining(secondLegacy), "unupgraded relay remains listed");
+			context.assertTrue(owner.hasMessageContaining(newRelay), "new relay remains listed");
+			context.assertFalse(
+					RelayConfigManager.get(owner.getUUID(), firstLegacy).requiresResave(),
+					"first legacy relay is upgraded"
+			);
+			context.assertTrue(
+					RelayConfigManager.get(owner.getUUID(), secondLegacy).requiresResave(),
+					"second legacy relay remains safely deferred"
+			);
+
+			CommandOutcome legacyFire = execute(owner, "pearlrelay fire " + secondLegacy);
+			context.assertTrue(
+					legacyFire.error().contains("RELAY_REQUIRES_RESAVE"),
+					"unupgraded relay keeps its stable rejection"
+			);
+			context.assertFalse(Files.exists(corrupt), "mixed config must not trigger recovery");
+			context.succeed();
+		} finally {
+			Files.deleteIfExists(config);
+			Files.deleteIfExists(backup);
+			Files.deleteIfExists(corrupt);
+			owner.close();
+		}
+	}
+
+	@GameTest
 	public void unloadedTargetCommandDoesNotAddTicketsOrEntities(GameTestHelper context)
 			throws Exception {
 		CapturingPlayer owner = createPlayer(context, "unload", new Vec3(3.5D, 0.0D, 0.5D));
@@ -634,6 +704,36 @@ public final class PearlRelayCommandGameTests implements CustomTestMethodInvoker
 		Path path = playerConfig(owner.getUUID());
 		Files.createDirectories(path.getParent());
 		Files.writeString(path, json);
+	}
+
+	private static void writeLegacyConfig(
+			GameTestHelper context,
+			CapturingPlayer owner,
+			String... relayNames
+	) throws IOException {
+		Vec3 spawn = context.absoluteVec(new Vec3(0.5D, 0.0D, 0.5D));
+		Vec3 lookAt = context.absoluteVec(new Vec3(0.5D, 1.5D, 3.5D));
+		var dimension = context.getLevel().dimension().identifier();
+		Map<String, RelayConfigManager.RelayDefinition> relays = new LinkedHashMap<>();
+		for (String relayName : relayNames) {
+			relays.put(
+					relayName,
+					new RelayConfigManager.RelayDefinition(
+							generatedBotName(owner.getUUID(), relayName),
+							dimension,
+							spawn,
+							lookAt,
+							null
+					)
+			);
+		}
+		Map<String, Object> file = new LinkedHashMap<>();
+		file.put("playerName", owner.getGameProfile().name());
+		file.put("relays", relays);
+
+		Path path = playerConfig(owner.getUUID());
+		Files.createDirectories(path.getParent());
+		Files.writeString(path, new GsonBuilder().setPrettyPrinting().create().toJson(file));
 	}
 
 	private static String generatedBotName(UUID playerId, String relayName) {

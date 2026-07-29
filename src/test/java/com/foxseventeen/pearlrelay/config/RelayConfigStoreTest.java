@@ -80,6 +80,47 @@ class RelayConfigStoreTest {
 	}
 
 	@Test
+	void addingRelayKeepsMultipleLegacyRelaysReadable() throws Exception {
+		writeMultipleLegacyRelays();
+		RelayConfigStore store = new RelayConfigStore(playersDir);
+
+		store.put(
+				PLAYER_ID,
+				"PlayerOne",
+				"new",
+				Identifier.parse("minecraft:overworld"),
+				new Vec3(30.5, 64.0, 18.5),
+				new Vec3(30.5, 64.5, 20.5),
+				new RelayConfigManager.TargetFingerprint(30, 64, 20, "minecraft:note_block")
+		);
+
+		assertEquals(Set.of("home", "backup", "new"), store.names(PLAYER_ID));
+		assertTrue(store.get(PLAYER_ID, "home").requiresResave());
+		assertTrue(store.get(PLAYER_ID, "backup").requiresResave());
+		assertFalse(store.get(PLAYER_ID, "new").requiresResave());
+	}
+
+	@Test
+	void upgradingOneOfMultipleLegacyRelaysKeepsTheOtherReadable() throws Exception {
+		writeMultipleLegacyRelays();
+		RelayConfigStore store = new RelayConfigStore(playersDir);
+
+		store.put(
+				PLAYER_ID,
+				"PlayerOne",
+				"home",
+				Identifier.parse("minecraft:overworld"),
+				new Vec3(10.5, 64.0, 18.5),
+				new Vec3(10.5, 64.5, 20.5),
+				new RelayConfigManager.TargetFingerprint(10, 64, 20, "minecraft:note_block")
+		);
+
+		assertEquals(Set.of("home", "backup"), store.names(PLAYER_ID));
+		assertFalse(store.get(PLAYER_ID, "home").requiresResave());
+		assertTrue(store.get(PLAYER_ID, "backup").requiresResave());
+	}
+
+	@Test
 	void overwritingConfigKeepsThePreviousSuccessfulFileAsBackup() throws Exception {
 		RelayConfigStore store = new RelayConfigStore(playersDir);
 		RelayConfigManager.TargetFingerprint firstTarget =
@@ -252,6 +293,29 @@ class RelayConfigStoreTest {
 	private void writeFixture(String name) throws IOException {
 		Files.createDirectories(playersDir);
 		Files.writeString(playersDir.resolve(PLAYER_ID + ".json"), readFixture(name));
+	}
+
+	private void writeMultipleLegacyRelays() throws IOException {
+		Files.createDirectories(playersDir);
+		Files.writeString(playersDir.resolve(PLAYER_ID + ".json"), """
+				{
+				  "playerName": "PlayerOne",
+				  "relays": {
+				    "home": {
+				      "bot": "pr_11111111_home",
+				      "dimension": {"namespace": "minecraft", "path": "overworld"},
+				      "spawn": {"x": 10.5, "y": 64.0, "z": 18.5},
+				      "lookAt": {"x": 10.5, "y": 64.5, "z": 20.5}
+				    },
+				    "backup": {
+				      "bot": "pr_11111111_back",
+				      "dimension": {"namespace": "minecraft", "path": "overworld"},
+				      "spawn": {"x": 20.5, "y": 64.0, "z": 18.5},
+				      "lookAt": {"x": 20.5, "y": 64.5, "z": 20.5}
+				    }
+				  }
+				}
+				""");
 	}
 
 	private static String readFixture(String name) throws IOException {
