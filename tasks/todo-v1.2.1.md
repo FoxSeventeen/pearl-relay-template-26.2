@@ -19,16 +19,16 @@
 - [x] 生产发布 JAR 客户端三个场景各 20/20
 - [x] 生产主类 `CodeSource` 来自普通发布 JAR
 - [x] JAR 元数据、归档内容、SHA-256 和 crash report 检查
-- [ ] GitHub Actions 分支、tag 和 main 门槛
+- [x] GitHub Actions 分支、tag 和 main 门槛
 
 ## 发布与部署
 
 - [x] 版本升级为 `1.2.1`
 - [x] 更新 README、CHANGELOG 和迁移说明
-- [ ] 五轴代码审查通过
-- [ ] 合入 `main`
-- [ ] 创建 annotated `v1.2.1` tag
-- [ ] 创建正式 GitHub Release、JAR 和 `SHA256SUMS`
+- [x] 五轴代码审查通过
+- [x] 合入 `main`
+- [x] 创建 annotated `v1.2.1` tag
+- [x] 创建正式 GitHub Release、JAR 和 `SHA256SUMS`
 - [ ] 停服前确认在线玩家并执行 `save-all flush`
 - [ ] 备份当前生产 JAR 和四份配置证据
 - [ ] 部署与 Release 资产字节一致的 v1.2.1 JAR
