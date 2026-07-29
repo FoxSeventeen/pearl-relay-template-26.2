@@ -137,11 +137,12 @@ spawn -> lookAt -> use once -> cleanup
 config/pearlrelay/players/<player-uuid>.json
 ```
 
-`1.2` 继续写入 `schemaVersion: 2`，并保存目标方块坐标和注册表 ID，因此
-`1.1` 配置无需迁移。旧版 schema v1 配置不会被删除，仍可在
+`1.2.1` 继续写入 `schemaVersion: 2`，并保存目标方块坐标和注册表 ID，
+因此 `1.1` 配置无需整体迁移。旧版 schema v1 配置不会被删除，仍可在
 `/pearlrelay list` 中看到，但 `/pearlrelay fire` 会返回
 `RELAY_REQUIRES_RESAVE`。站在正确装置旁、看向点火方块，重新执行同名
-`/pearlrelay save <名称>` 即可原地升级。
+`/pearlrelay save <名称>` 即可原地升级。多个旧点可以逐个升级；已升级点
+和待升级点能够安全共存，保存其中一个不会再让整份配置进入恢复流程。
 
 配置保存使用同目录临时文件、刷新和原子替换；最近一次成功主文件保留为
 同玩家 `.bak`。主文件损坏且备份有效时，模组先保留 `.corrupt-N`，再恢复
